@@ -1,5 +1,6 @@
 import React from 'react'
 import { makeStyles } from '@material-ui/core/styles';
+import { MainPanel } from './components/MainPanel';
 
 const useStyles = makeStyles({
     App: {
@@ -9,7 +10,6 @@ const useStyles = makeStyles({
     },
     AppPanelContainer: {
         width: '300px',
-        backgroundColor: 'green',
     },
     AppMapContainer: {
         flexGrow: 1,
@@ -33,7 +33,9 @@ function App() {
     const classes = useStyles()
     return (
         <div className={classes.App}>
-            <div className={classes.AppPanelContainer}></div>
+            <div className={classes.AppPanelContainer}>
+                <MainPanel />
+            </div>
             <div className={classes.AppMapContainer}></div>
         </div>
     )
