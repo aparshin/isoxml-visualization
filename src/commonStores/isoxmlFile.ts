@@ -29,7 +29,7 @@ export const isoxmlFileSlice = createSlice({
         },
 
         loadingError: state => {
-            state.state = ISOXMLFileState.NOT_LOADED
+            state.state = ISOXMLFileState.ERROR
             isoxmlManager = null
         },
 
@@ -69,5 +69,6 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 }
 
 // Selectors
-export const isIsoxmlFileLoaded = (state: any) => state.isoxmlFile.state === ISOXMLFileState.LOADED
+export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
+
 export const getCurrentISOXMLManager = () => isoxmlManager

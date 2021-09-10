@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import isoxmlFileReducer from './commonStores/isoxmlFile'
 
-export default configureStore({
+const store = configureStore({
     reducer: {
         isoxmlFile: isoxmlFileReducer
     },
@@ -12,3 +12,9 @@ export default configureStore({
             },
         }),
 })
+
+export type RootState = ReturnType<typeof store.getState>
+
+export type AppDispatch = typeof store.dispatch
+
+export default store
