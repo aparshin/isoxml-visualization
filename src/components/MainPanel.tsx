@@ -33,6 +33,18 @@ const useStyles = makeStyles({
         fontWeight: 'bold'
     },
 
+    loadedContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%'
+    },
+
+    loadedBody: {
+        flex: '1 1 auto',
+        overflowY: 'auto',
+        minHeight: 0
+    },
+
     loadedHeader: {
         textAlign: 'center',
         borderBottom: '1px solid gray',
@@ -69,12 +81,14 @@ export function MainPanel() {
                 </div>
             )}
             {fileState === ISOXMLFileState.LOADED && (
-                <>
+                <div className={classes.loadedContainer}>
                     <div className={classes.loadedHeader}>
                         <Button size="small" variant="contained" color="primary" onClick={open}>Select an ISOXML file</Button>
                     </div>
-                    <ISOXMLFileStructure />
-                </>
+                    <div className={classes.loadedBody}>
+                        <ISOXMLFileStructure />
+                    </div>
+                </div>
             )}
         </div>
     )

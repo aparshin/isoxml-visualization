@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 import isoxmlFileReducer from './commonStores/isoxmlFile'
+import visualSettingsReducer from './commonStores/visualSettings'
 
 const store = configureStore({
     reducer: {
-        isoxmlFile: isoxmlFileReducer
+        isoxmlFile: isoxmlFileReducer,
+        visualSettings: visualSettingsReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
