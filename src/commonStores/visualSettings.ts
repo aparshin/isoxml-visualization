@@ -11,6 +11,10 @@ export const visualSettingsSlice = createSlice({
         toggleGridVisibility: (state, action) => {
             const id = action.payload.gridId
             state.gridsVisibility[id] = !state.gridsVisibility[id]
+        },
+        setGridVisibility: (state, action) => {
+            const {gridId, visible} = action.payload
+            state.gridsVisibility[gridId] = visible
         }
     },
     extraReducers: builder => {
@@ -20,8 +24,8 @@ export const visualSettingsSlice = createSlice({
     }
 })
 
-// Action creators are generated for each case reducer function
-export const { toggleGridVisibility } = visualSettingsSlice.actions
+// actions
+export const { toggleGridVisibility, setGridVisibility } = visualSettingsSlice.actions
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
