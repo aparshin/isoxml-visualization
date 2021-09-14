@@ -6,7 +6,7 @@ import {BASEMAP} from '@deck.gl/carto'
 import { gridsVisibilitySelector } from '../commonStores/visualSettings';
 import { getCurrentISOXMLManager } from '../commonStores/isoxmlFile';
 import ISOXMLGridLayer from '../mapLayers/GridLayer';
-import { Task } from 'isoxml';
+import { ExtendedGrid, Task } from 'isoxml';
 import { fitBoundsSelector } from '../commonStores/map'
 import { useSelector } from 'react-redux'
 
@@ -19,7 +19,7 @@ export function Map() {
         .map(taskId => {
             const task = isoxmlManager.getEntityByXmlId<Task>(taskId)
 
-            return new ISOXMLGridLayer(taskId, task.attributes.Grid[0])
+            return new ISOXMLGridLayer(taskId, task.attributes.Grid[0] as ExtendedGrid)
         })
 
     const viewStateRef = useRef(null)
