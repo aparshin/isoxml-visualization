@@ -1,14 +1,10 @@
-import chroma from 'chroma-js'
 import GL from '@luma.gl/constants'
 import { BitmapLayer } from '@deck.gl/layers'
 import { ExtendedGrid } from "isoxml"
-import { gridBounds } from "../utils"
-
-
-const SCALE = chroma.brewer.RdYlGn
+import { gridBounds, GRID_COLOR_SCALE } from "../utils"
 
 export default class ISOXMLGridLayer {
-    constructor(id: string, grid: ExtendedGrid) {
+    constructor(id: string, grid: ExtendedGrid, range: {min: number, max: number}) {
         const nCols = grid.attributes.GridMaximumColumn
         const nRows = grid.attributes.GridMaximumRow
 
@@ -19,18 +15,8 @@ export default class ISOXMLGridLayer {
         canvas.height = nRows
 
         const cells = new Int32Array(grid.binaryData.buffer)
-        let minValue = +Infinity
-        let maxValue = -Infinity
 
-        for (let idx = 0; idx < nRows * nCols; idx++) {
-            const v = cells[idx]
-            if (v) {
-                minValue = Math.min(minValue, cells[idx])
-                maxValue = Math.max(maxValue, cells[idx])
-            }
-        }
-
-        const palette = chroma.scale(SCALE.slice(0).reverse()).domain([minValue, maxValue])
+        const palette = GRID_COLOR_SCALE.domain([range.min, range.max])
 
         const ctx = canvas.getContext('2d')
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)

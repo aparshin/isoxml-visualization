@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { ISOXMLManager } from 'isoxml'
+import { ExtendedGrid, ISOXMLManager } from 'isoxml'
 
 // The reason to keet it out of the store is to avoid non-serializable data in the store
 // No parts of this app should modify data in this ISOXMLManager
@@ -12,29 +12,58 @@ export enum ISOXMLFileState {
     ERROR
 }
 
+const calculateGridValuesRange = (grid: ExtendedGrid): {min: number, max: number} => {
+    const nCols = grid.attributes.GridMaximumColumn
+    const nRows = grid.attributes.GridMaximumRow
+    const cells = new Int32Array(grid.binaryData.buffer)
+    let min = +Infinity
+    let max = -Infinity
+
+    for (let idx = 0; idx < nRows * nCols; idx++) {
+        const v = cells[idx]
+        if (v) {
+            min = Math.min(min, cells[idx])
+            max = Math.max(max, cells[idx])
+        }
+    }
+    return {min, max}
+}
+
 export const isoxmlFileSlice = createSlice({
     name: 'isoxmlFile',
     initialState: {
-        state: ISOXMLFileState.NOT_LOADED
+        state: ISOXMLFileState.NOT_LOADED,
+        gridRanges: {}
     },
     reducers: {
         startLoading: state => {
             state.state = ISOXMLFileState.LOADING
+            state.gridRanges = {}
             isoxmlManager = null
         },
 
         loadingDone: (state, action) => {
             state.state = ISOXMLFileState.LOADED
             isoxmlManager = action.payload
+            state.gridRanges = {};
+            (isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
+                const grid = task.attributes.Grid?.[0]
+                if (grid) {
+                    const xmlId = isoxmlManager.getReferenceByEntity(task).xmlId
+                    state.gridRanges[xmlId] = calculateGridValuesRange(grid as ExtendedGrid)
+                }
+            })
         },
 
         loadingError: state => {
             state.state = ISOXMLFileState.ERROR
+            state.gridRanges = {}
             isoxmlManager = null
         },
 
         removeFile: state => {
             state.state = ISOXMLFileState.NOT_LOADED
+            state.gridRanges = {}
             isoxmlManager = null
         }
     }
@@ -70,5 +99,6 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 
 // Selectors
 export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
+export const isoxmlFileGridRangesSelector = (state: any) => state.isoxmlFile.gridRanges
 
 export const getCurrentISOXMLManager = () => isoxmlManager
