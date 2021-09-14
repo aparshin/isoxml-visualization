@@ -1,5 +1,5 @@
 import chroma from "chroma-js";
-import { Grid } from "isoxml";
+import { Grid, GridValueDescription } from "isoxml";
 
 export function gridBounds(grid: Grid) {
     const {
@@ -21,3 +21,7 @@ export function gridBounds(grid: Grid) {
 
 
 export const GRID_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).reverse())
+
+export const convertValue = (value: number, valueDescription: GridValueDescription): number => {
+    return value * valueDescription.scale + valueDescription.offset
+}

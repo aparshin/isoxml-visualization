@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { ExtendedGrid, ISOXMLManager } from 'isoxml'
+import { ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
+import { GridValueDescription } from 'isoxml/dist/types'
 
 // The reason to keet it out of the store is to avoid non-serializable data in the store
 // No parts of this app should modify data in this ISOXMLManager
@@ -29,41 +30,53 @@ const calculateGridValuesRange = (grid: ExtendedGrid): {min: number, max: number
     return {min, max}
 }
 
+type GridInfo = GridValueDescription & {min: number, max: number}
+
+type IsoxmlFileState = {
+    state: ISOXMLFileState
+    gridsInfo: {[taskId: string]: GridInfo}
+}
+
 export const isoxmlFileSlice = createSlice({
     name: 'isoxmlFile',
     initialState: {
         state: ISOXMLFileState.NOT_LOADED,
-        gridRanges: {}
-    },
+        gridsInfo: {}
+    } as IsoxmlFileState,
     reducers: {
         startLoading: state => {
             state.state = ISOXMLFileState.LOADING
-            state.gridRanges = {}
+            state.gridsInfo = {}
             isoxmlManager = null
         },
 
         loadingDone: (state, action) => {
             state.state = ISOXMLFileState.LOADED
             isoxmlManager = action.payload
-            state.gridRanges = {};
+            state.gridsInfo = {};
             (isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
                 const grid = task.attributes.Grid?.[0]
                 if (grid) {
                     const xmlId = isoxmlManager.getReferenceByEntity(task).xmlId
-                    state.gridRanges[xmlId] = calculateGridValuesRange(grid as ExtendedGrid)
+                    const gridRange = calculateGridValuesRange(grid as ExtendedGrid)
+                    const gridValuesDescription = (task as ExtendedTask).getGridValuesDescription()
+                    state.gridsInfo[xmlId] = {
+                        ...gridRange,
+                        ...gridValuesDescription[0]
+                    }
                 }
             })
         },
 
         loadingError: state => {
             state.state = ISOXMLFileState.ERROR
-            state.gridRanges = {}
+            state.gridsInfo = {}
             isoxmlManager = null
         },
 
         removeFile: state => {
             state.state = ISOXMLFileState.NOT_LOADED
-            state.gridRanges = {}
+            state.gridsInfo = {}
             isoxmlManager = null
         }
     }
@@ -99,6 +112,6 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 
 // Selectors
 export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
-export const isoxmlFileGridRangesSelector = (state: any) => state.isoxmlFile.gridRanges
+export const isoxmlFileGridsInfoSelector = (state: any): {[taskId: string]: GridInfo} => state.isoxmlFile.gridsInfo
 
 export const getCurrentISOXMLManager = () => isoxmlManager

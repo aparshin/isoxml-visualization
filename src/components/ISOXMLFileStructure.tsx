@@ -2,13 +2,13 @@ import React, { useCallback } from 'react'
 import { makeStyles } from '@material-ui/core/styles'
 import VisibilityIcon from '@material-ui/icons/Visibility'
 import ZoomInIcon from '@material-ui/icons/ZoomIn'
-import { getCurrentISOXMLManager, isoxmlFileGridRangesSelector } from '../commonStores/isoxmlFile'
+import { getCurrentISOXMLManager, isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import { IconButton } from '@material-ui/core'
 import { useDispatch, useSelector } from 'react-redux'
 import { gridsVisibilitySelector, setGridVisibility, toggleGridVisibility } from '../commonStores/visualSettings'
 import { fitBounds } from '../commonStores/map'
 import { Task } from 'isoxml'
-import { gridBounds, GRID_COLOR_SCALE } from '../utils'
+import { convertValue, gridBounds, GRID_COLOR_SCALE } from '../utils'
 import chroma from 'chroma-js'
 import Tooltip from '@material-ui/core/Tooltip'
 
@@ -38,6 +38,9 @@ const useStyles = makeStyles({
     },
     gridTitle: {
         flexGrow: 1
+    },
+    gridDDInfo: {
+        fontStyle: 'italic'
     },
     gridPalette: {
         height: 16,
@@ -74,7 +77,7 @@ export function ISOXMLFileStructure() {
     const tasks = isoxmlManager.rootElement.attributes.Task
 
     const gridsVisibility = useSelector(gridsVisibilitySelector)
-    const gridRanges = useSelector(isoxmlFileGridRangesSelector)
+    const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
 
     if (tasks.length === 0) {
         return <div>No tasks in this TaskSet</div>
@@ -84,6 +87,7 @@ export function ISOXMLFileStructure() {
         {tasks.map(task => {
             const grid = task.attributes.Grid?.[0]
             const xmlId = isoxmlManager.getReferenceByEntity(task).xmlId
+            const gridInfo = gridsInfo[xmlId]
 
             return (
                 <div  key={xmlId} className={classes.taskContainer}>
@@ -109,10 +113,11 @@ export function ISOXMLFileStructure() {
                             </Tooltip>
                         </div>
                         {gridsVisibility[xmlId] && (<>
+                            <div className={classes.gridDDInfo}>{gridInfo.name}</div>
                             <div className={classes.gridPalette}></div>
                             <div className={classes.gridRangeContainer}>
-                                <div className={classes.gridRangeMin}>{gridRanges[xmlId].min}</div>
-                                <div className={classes.gridRangeMax}>{gridRanges[xmlId].max}</div>
+                                <div className={classes.gridRangeMin}>{convertValue(gridInfo.min, gridInfo)} {gridInfo.unit}</div>
+                                <div className={classes.gridRangeMax}>{convertValue(gridInfo.max, gridInfo)} {gridInfo.unit}</div>
                             </div>
                         </>)}
                     </div>)}
