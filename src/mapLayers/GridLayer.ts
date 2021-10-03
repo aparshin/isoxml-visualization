@@ -42,8 +42,8 @@ export default class ISOXMLGridLayer {
         return new BitmapLayer({
             id,
             bounds,
-            image: Promise.resolve(canvas), // TODO: remove promise after https://github.com/visgl/deck.gl/issues/6192 is fixed
-              textureParameters: {
+            image: canvas,
+            textureParameters: {
                 [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
                 [GL.TEXTURE_MAG_FILTER]: GL.NEAREST
             }
