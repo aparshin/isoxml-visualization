@@ -22,6 +22,7 @@
     "chroma-js": "^2.1.2",
     "clsx": "^1.1.1",
     "isoxml": "^1.1.0",
+    "maplibre-gl": "^2.0.0-pre.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-dropzone": "^11.3.4",
@@ -32,7 +33,7 @@
     "web-vitals": "^2.1.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "craco start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -54,5 +55,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@craco/craco": "^6.4.0"
   }
 }
