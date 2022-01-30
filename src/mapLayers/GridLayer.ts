@@ -3,7 +3,7 @@ import { BitmapLayer } from '@deck.gl/layers'
 import { ExtendedGrid } from "isoxml"
 import { gridBounds, GRID_COLOR_SCALE } from "../utils"
 
-export default class ISOXMLGridLayer {
+export default class ISOXMLGridLayer extends BitmapLayer<unknown>{
     constructor(id: string, grid: ExtendedGrid, range: {min: number, max: number}) {
         const nCols = grid.attributes.GridMaximumColumn
         const nRows = grid.attributes.GridMaximumRow
@@ -39,14 +39,15 @@ export default class ISOXMLGridLayer {
 
         ctx.putImageData(imageData, 0, 0)
 
-        return new BitmapLayer({
+        super({
             id,
             bounds,
             image: canvas,
             textureParameters: {
                 [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
                 [GL.TEXTURE_MAG_FILTER]: GL.NEAREST
-            }
+            },
+            pickable: true
         })
     }
 }

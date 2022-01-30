@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
 import { GridValueDescription } from 'isoxml/dist/types'
+import { calculateGridValuesRange } from '../utils'
 
 // The reason to keet it out of the store is to avoid non-serializable data in the store
 // No parts of this app should modify data in this ISOXMLManager
@@ -11,23 +12,6 @@ export enum ISOXMLFileState {
     LOADING,
     LOADED,
     ERROR
-}
-
-const calculateGridValuesRange = (grid: ExtendedGrid): {min: number, max: number} => {
-    const nCols = grid.attributes.GridMaximumColumn
-    const nRows = grid.attributes.GridMaximumRow
-    const cells = new Int32Array(grid.binaryData.buffer)
-    let min = +Infinity
-    let max = -Infinity
-
-    for (let idx = 0; idx < nRows * nCols; idx++) {
-        const v = cells[idx]
-        if (v) {
-            min = Math.min(min, cells[idx])
-            max = Math.max(max, cells[idx])
-        }
-    }
-    return {min, max}
 }
 
 type GridInfo = GridValueDescription & {min: number, max: number}

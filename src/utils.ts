@@ -1,7 +1,8 @@
+import { ExtentsLeftBottomRightTop } from "@deck.gl/core/utils/positions";
 import chroma from "chroma-js";
-import { Grid, GridValueDescription } from "isoxml";
+import { ExtendedGrid, Grid, GridValueDescription } from "isoxml";
 
-export function gridBounds(grid: Grid) {
+export function gridBounds(grid: Grid): ExtentsLeftBottomRightTop {
     const {
         GridMinimumNorthPosition: minLat,
         GridMinimumEastPosition: minLng,
@@ -19,6 +20,30 @@ export function gridBounds(grid: Grid) {
     ]
 }
 
+export function calculateGridValuesRange (grid: ExtendedGrid): {min: number, max: number} {
+    const nCols = grid.attributes.GridMaximumColumn
+    const nRows = grid.attributes.GridMaximumRow
+    const cells = new Int32Array(grid.binaryData.buffer)
+    let min = +Infinity
+    let max = -Infinity
+
+    for (let idx = 0; idx < nRows * nCols; idx++) {
+        const v = cells[idx]
+        if (v) {
+            min = Math.min(min, cells[idx])
+            max = Math.max(max, cells[idx])
+        }
+    }
+    return {min, max}
+}
+
+export function getGridValue(grid: ExtendedGrid, x: number, y: number): number {
+    const nCols = grid.attributes.GridMaximumColumn
+    const nRows = grid.attributes.GridMaximumRow
+    const cells = new Int32Array(grid.binaryData.buffer)
+
+    return cells[(nRows - y - 1) * nCols + x]
+}
 
 export const GRID_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).reverse())
 
