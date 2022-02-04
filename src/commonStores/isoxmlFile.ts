@@ -1,11 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
-import { GridValueDescription } from 'isoxml/dist/types'
+import { GridValueDescription, ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
 import { calculateGridValuesRange } from '../utils'
-
-// The reason to keet it out of the store is to avoid non-serializable data in the store
-// No parts of this app should modify data in this ISOXMLManager
-let isoxmlManager: ISOXMLManager
+import { clearISOXMLManagerData, setISOXMLManagerData } from './isoxmlFileInfo'
 
 export enum ISOXMLFileState {
     NOT_LOADED,
@@ -21,30 +17,32 @@ type IsoxmlFileState = {
     gridsInfo: {[taskId: string]: GridInfo}
 }
 
+
 export const isoxmlFileSlice = createSlice({
     name: 'isoxmlFile',
     initialState: {
         state: ISOXMLFileState.NOT_LOADED,
-        gridsInfo: {}
+        gridsInfo: {},
     } as IsoxmlFileState,
     reducers: {
         startLoading: state => {
             state.state = ISOXMLFileState.LOADING
             state.gridsInfo = {}
-            isoxmlManager = null
+            clearISOXMLManagerData()
         },
 
         loadingDone: (state, action) => {
+            const isoxmlManager = action.payload
             state.state = ISOXMLFileState.LOADED
-            isoxmlManager = action.payload
-            state.gridsInfo = {};
-            (isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
+            setISOXMLManagerData(isoxmlManager, {})
+            state.gridsInfo = {}
+            ;(isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
                 const grid = task.attributes.Grid?.[0]
+                const taskXmlId = isoxmlManager.getReferenceByEntity(task).xmlId
                 if (grid) {
-                    const xmlId = isoxmlManager.getReferenceByEntity(task).xmlId
                     const gridRange = calculateGridValuesRange(grid as ExtendedGrid)
                     const gridValuesDescription = (task as ExtendedTask).getGridValuesDescription()
-                    state.gridsInfo[xmlId] = {
+                    state.gridsInfo[taskXmlId] = {
                         ...gridRange,
                         ...gridValuesDescription[0]
                     }
@@ -55,19 +53,13 @@ export const isoxmlFileSlice = createSlice({
         loadingError: state => {
             state.state = ISOXMLFileState.ERROR
             state.gridsInfo = {}
-            isoxmlManager = null
+            clearISOXMLManagerData()
         },
-
-        removeFile: state => {
-            state.state = ISOXMLFileState.NOT_LOADED
-            state.gridsInfo = {}
-            isoxmlManager = null
-        }
-    }
+    },
 })
 
 // Action creators are generated for each case reducer function
-export const { startLoading, loadingDone, loadingError, removeFile } = isoxmlFileSlice.actions
+export const { startLoading, loadingDone, loadingError } = isoxmlFileSlice.actions
 
 export default isoxmlFileSlice.reducer
 
@@ -96,6 +88,5 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 
 // Selectors
 export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
-export const isoxmlFileGridsInfoSelector = (state: any): {[taskId: string]: GridInfo} => state.isoxmlFile.gridsInfo
-
-export const getCurrentISOXMLManager = () => isoxmlManager
+export const isoxmlFileGridsInfoSelector = (state: any): {[taskId: string]: GridInfo} =>
+    state.isoxmlFile.gridsInfo

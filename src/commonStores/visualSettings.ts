@@ -1,11 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-import {loadingDone} from './isoxmlFile'
+import { startLoading } from './isoxmlFile'
 
 export const visualSettingsSlice = createSlice({
     name: 'visualSettings',
     initialState: {
-        gridsVisibility: {}
+        gridsVisibility: {},
+        timeLogsVisibility: {},
     },
     reducers: {
         toggleGridVisibility: (state, action) => {
@@ -15,19 +16,29 @@ export const visualSettingsSlice = createSlice({
         setGridVisibility: (state, action) => {
             const {gridId, visible} = action.payload
             state.gridsVisibility[gridId] = visible
+        },
+        toggleTimeLogVisibility: (state, action) => {
+            const id = action.payload.timeLogId
+            state.timeLogsVisibility[id] = !state.timeLogsVisibility[id]
+        },
+        setTimeLogVisibility: (state, action) => {
+            const {timeLogId, visible} = action.payload
+            state.timeLogsVisibility[timeLogId] = visible
         }
     },
     extraReducers: builder => {
-        builder.addCase(loadingDone, (state => {
+        builder.addCase(startLoading, state => {
             state.gridsVisibility = {}
-        }))
+            state.timeLogsVisibility = {}
+        })
     }
 })
 
 // actions
-export const { toggleGridVisibility, setGridVisibility } = visualSettingsSlice.actions
+export const { toggleGridVisibility, setGridVisibility, toggleTimeLogVisibility, setTimeLogVisibility } = visualSettingsSlice.actions
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
+export const timeLogsVisibilitySelector = state => state.visualSettings.timeLogsVisibility
 
 export default visualSettingsSlice.reducer

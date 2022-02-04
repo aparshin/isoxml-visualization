@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { makeStyles } from '@material-ui/core/styles'
-import {WebMercatorViewport } from '@deck.gl/core'
+import { WebMercatorViewport } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
-import {BASEMAP} from '@deck.gl/carto'
-import { InitialViewStateProps } from '@deck.gl/core/lib/deck'
-import {StaticMap} from 'react-map-gl'
 import { ExtendedGrid, Task } from 'isoxml';
-import { gridsVisibilitySelector } from '../commonStores/visualSettings';
-import { getCurrentISOXMLManager, isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile';
+import { gridsVisibilitySelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings';
+import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile';
 import ISOXMLGridLayer from '../mapLayers/GridLayer';
 import { fitBoundsSelector } from '../commonStores/map'
 import { convertValue, getGridValue } from '../utils'
+import {GeoJsonLayer } from '@deck.gl/layers'
+import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
+import { getISOXMLManager, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
 
 const useStyles = makeStyles({
     tooltipBase: {
@@ -41,24 +41,45 @@ interface TooltipState {
 export function Map() {
     const [tooltip, setTooltip] = useState<TooltipState>(null)
 
-    const [initialViewState, setInitialViewState] = useState<InitialViewStateProps>({
-        longitude: 40.81558,
-        latitude: 45.10850,
+    const [initialViewState, setInitialViewState] = useState<any>({
+        longitude: 9.5777866,
+        latitude: 45.5277534,
         zoom: 13
     })
 
     const fitBounds = useSelector(fitBoundsSelector)
     const visibleGrids = useSelector(gridsVisibilitySelector)
+    const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
-    const isoxmlManager = getCurrentISOXMLManager()
-    const layers = Object.keys(visibleGrids)
+    const isoxmlManager = getISOXMLManager()
+    const timeLogsCache = getTimeLogsCache()
+    const gridLayers = Object.keys(visibleGrids)
         .filter(taskId => visibleGrids[taskId])
         .map(taskId => {
             const task = isoxmlManager.getEntityByXmlId<Task>(taskId)
 
             return new ISOXMLGridLayer(taskId, task.attributes.Grid[0] as ExtendedGrid, gridsInfo[taskId])
         })
+    const timeLogLayers = Object.keys(visibleTimeLogs).filter(key => visibleTimeLogs[key]).map(timeLogId => {
+        const timeLog = timeLogsCache[timeLogId].timeLogs
+        const geoJSON = {
+            type: 'FeatureCollection',
+            features: timeLog.map(timeLogItem => ({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [timeLogItem.position.PositionEast, timeLogItem.position.PositionNorth]
+                },
+                properties: {}
+            }))
+        }
 
+        return new GeoJsonLayer({
+            id: timeLogId,
+            data: geoJSON
+        })
+    })
+    
     const viewStateRef = useRef(null)
 
     const onViewStateChange = useCallback(e => {
@@ -95,8 +116,15 @@ export function Map() {
     useEffect(() => {
         if (fitBounds) {
             const viewport = new WebMercatorViewport(viewStateRef.current)
-            const fitBoundsViewport = viewport.fitBounds([fitBounds.slice(0, 2), fitBounds.slice(2, 4)])
-            setInitialViewState(fitBoundsViewport)
+            const {longitude, latitude, zoom} = viewport.fitBounds([fitBounds.slice(0, 2), fitBounds.slice(2, 4)]) as any
+            setInitialViewState({
+                longitude,
+                latitude,
+                zoom: Math.min(20, zoom),
+                pitch: 0,
+                bearing: 0,
+                __triggerUpdate: Math.random() // This property is used to force DeckGL to update the viewState
+            })
             setTooltip(null)
         }
     }, [fitBounds])
@@ -107,17 +135,17 @@ export function Map() {
         <DeckGL
             initialViewState={initialViewState}
             controller={true}
-            layers={layers}
+            layers={[OSMBasemap, ...gridLayers, ...timeLogLayers]}
             onViewStateChange={onViewStateChange}
             onClick={onMapClick}
         >
-            <StaticMap mapStyle={BASEMAP.POSITRON} />
+            <OSMCopyright />
+            {tooltip && (<>
+                <div className={classes.tooltipBase} style={{left: tooltip.x, top: tooltip.y}}/>
+                <div className={classes.tooltip} style={{left: tooltip.x, top: tooltip.y}}>
+                    {tooltip.value}
+                </div>
+            </>)}
         </DeckGL>
-        {tooltip && (<>
-            <div className={classes.tooltipBase} style={{left: tooltip.x, top: tooltip.y}}/>
-            <div className={classes.tooltip} style={{left: tooltip.x, top: tooltip.y}}>
-                {tooltip.value}
-            </div>
-        </>)}
     </>)
 }
