@@ -5,18 +5,20 @@ import ZoomInIcon from '@material-ui/icons/ZoomIn'
 import {
     isoxmlFileGridsInfoSelector,
 } from '../commonStores/isoxmlFile'
-import { IconButton } from '@material-ui/core'
+import { IconButton, MenuItem, Select, Typography } from '@material-ui/core'
 import { useDispatch, useSelector } from 'react-redux'
 import {
     gridsVisibilitySelector,
     setGridVisibility,
+    setTimeLogDDI,
     setTimeLogVisibility,
+    timeLogsSelectedDDISelector,
     timeLogsVisibilitySelector,
     toggleGridVisibility,
     toggleTimeLogVisibility
 } from '../commonStores/visualSettings'
 import { fitBounds } from '../commonStores/map'
-import { Task } from 'isoxml'
+import { DataLogValueInfo, Task, ValueInformation } from 'isoxml'
 import { convertValue, gridBounds, GRID_COLOR_SCALE } from '../utils'
 import chroma from 'chroma-js'
 import Tooltip from '@material-ui/core/Tooltip'
@@ -50,7 +52,8 @@ const useStyles = makeStyles({
         flexGrow: 1
     },
     gridDDInfo: {
-        fontStyle: 'italic'
+        fontStyle: 'italic',
+        fontSize: '0.9rem'
     },
     gridPalette: {
         height: 16,
@@ -60,10 +63,16 @@ const useStyles = makeStyles({
         display: 'flex'
     },
     gridRangeMin: {
-        flexGrow: 1
+        flexGrow: 1,
+        fontSize: '0.9rem'
     },
     gridRangeMax: {
-
+        fontSize: '0.9rem'
+    },
+    timeLogDDISelect: {
+        width: '100%',
+        fontSize: '0.9rem',
+        fontStyle: 'italic'
     }
 })
 
@@ -86,7 +95,7 @@ function EntityTitle ({onVisibilityClick, onZoomToClick, title, entityId, isVisi
                     />
                 </IconButton>
             </Tooltip>
-            <span className={classes.gridTitle}>{title}</span>
+            <Typography display="inline" className={classes.gridTitle}>{title}</Typography>
             <Tooltip title="Zoom to entity">
                 <IconButton data-entityid={entityId} size="small" onClick={onZoomToClick}>
                     <ZoomInIcon color='primary' />
@@ -96,16 +105,37 @@ function EntityTitle ({onVisibilityClick, onZoomToClick, title, entityId, isVisi
     )
 }
 
+interface ValueDataPaletteProps {
+    valueInfo: ValueInformation
+    min: number
+    max: number
+    hideTitle?: boolean
+}
+
+function ValueDataPalette({valueInfo, min, max, hideTitle}: ValueDataPaletteProps) {
+    const classes = useStyles()
+    return (<>
+        {!hideTitle && (
+            <Typography className={classes.gridDDInfo}>{valueInfo.DDEntityName}</Typography>
+        )}
+        <div className={classes.gridPalette}></div>
+        <div className={classes.gridRangeContainer}>
+            <Typography className={classes.gridRangeMin}>{convertValue(min, valueInfo)} {valueInfo.unit}</Typography>
+            <Typography className={classes.gridRangeMax}>{convertValue(max, valueInfo)} {valueInfo.unit}</Typography>
+        </div>
+    </>)
+}
+
 export function ISOXMLFileStructure() {
     const classes = useStyles()
+
     const isoxmlManager = getISOXMLManager()
     const timeLogCache = getTimeLogsCache()
 
     const gridsVisibility = useSelector(gridsVisibilitySelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
-
     const timeLogsVisibility = useSelector(timeLogsVisibilitySelector)
-
+    const timeLogsSelectedDDI = useSelector(timeLogsSelectedDDISelector)
 
     const dispatch = useDispatch()
 
@@ -134,6 +164,11 @@ export function ISOXMLFileStructure() {
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
     }, [dispatch, timeLogCache])
 
+    const onTimeLogDDIChange = useCallback((event, child) => {
+        const timeLogId = event.nativeEvent.target.dataset.entityid
+        dispatch(setTimeLogDDI({timeLogId, ddi: event.target.value}))
+    }, [dispatch])
+
     const tasks = isoxmlManager.rootElement.attributes.Task
 
     if (tasks.length === 0) {
@@ -150,9 +185,9 @@ export function ISOXMLFileStructure() {
 
             return (
                 <div key={xmlId} className={classes.taskContainer}>
-                    <div className={classes.taskTitle}>
+                    <Typography className={classes.taskTitle}>
                         {task.attributes.TaskDesignator || xmlId}
-                    </div>
+                    </Typography>
                     {grid && (<div className={classes.gridContainer}>
                         <EntityTitle
                             title={`Grid ${grid.attributes.GridMaximumColumn}x${grid.attributes.GridMaximumRow}`}
@@ -161,25 +196,57 @@ export function ISOXMLFileStructure() {
                             entityId={xmlId}
                             isVisible={!!gridsVisibility[xmlId]}
                         />
-                        {gridsVisibility[xmlId] && (<>
-                            <div className={classes.gridDDInfo}>{gridInfo.name}</div>
-                            <div className={classes.gridPalette}></div>
-                            <div className={classes.gridRangeContainer}>
-                                <div className={classes.gridRangeMin}>{convertValue(gridInfo.min, gridInfo)} {gridInfo.unit}</div>
-                                <div className={classes.gridRangeMax}>{convertValue(gridInfo.max, gridInfo)} {gridInfo.unit}</div>
-                            </div>
-                        </>)}
+                        {gridsVisibility[xmlId] && (
+                            <ValueDataPalette valueInfo={gridInfo} min={gridInfo.min} max={gridInfo.max}/>
+                        )}
                     </div>)}
-                    {timeLogs.map(timeLog => (
-                        <EntityTitle
-                            title={`TimeLog ${timeLog.attributes.Filename}`}
-                            key={timeLog.attributes.Filename}
-                            onVisibilityClick={onTimeLogVisibilityClick}
-                            onZoomToClick={onTimeLogZoomToClick}
-                            entityId={timeLog.attributes.Filename}
-                            isVisible={!!timeLogsVisibility[timeLog.attributes.Filename]}
-                        />
-                    ))}
+                    {timeLogs.map(timeLog => {
+                        const timeLogId = timeLog.attributes.Filename
+
+                        let variableValuesInfo: DataLogValueInfo[]
+                        let selectedValueInfo: DataLogValueInfo
+                        if (timeLogsVisibility[timeLogId]) {
+                            variableValuesInfo = timeLogCache[timeLogId].valuesInfo.filter(
+                                valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
+                            )
+                            selectedValueInfo = timeLogsSelectedDDI[timeLogId]
+                                ? variableValuesInfo.find(info => info.DDI === timeLogsSelectedDDI[timeLogId])
+                                : variableValuesInfo[0]
+                        }
+                        return (
+                            <div key={timeLogId} className={classes.gridContainer}>
+                                <EntityTitle
+                                    title={`TimeLog ${timeLogId}`}
+                                    onVisibilityClick={onTimeLogVisibilityClick}
+                                    onZoomToClick={onTimeLogZoomToClick}
+                                    entityId={timeLogId}
+                                    isVisible={!!timeLogsVisibility[timeLogId]}
+                                />
+                                {timeLogsVisibility[timeLogId] && variableValuesInfo.length > 0 && (<>
+                                    <Select
+                                        className={classes.timeLogDDISelect}
+                                        value={selectedValueInfo.DDI}
+                                        onChange={onTimeLogDDIChange}
+                                    >
+                                        {variableValuesInfo.map(valueInfo => (
+                                            <MenuItem key={valueInfo.DDI} value={valueInfo.DDI} data-entityid={timeLogId}>
+                                                {valueInfo.DDEntityName
+                                                    ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDI})`
+                                                    : `DDI ${valueInfo.DDI}`
+                                                }
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                    <ValueDataPalette
+                                        valueInfo={selectedValueInfo}
+                                        min={selectedValueInfo.minValue}
+                                        max={selectedValueInfo.maxValue}
+                                        hideTitle={true}
+                                    />
+                                </>)}
+                            </div>
+                        )
+                    })}
                 </div>
             )
         })}

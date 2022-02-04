@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { GridValueDescription, ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
+import { ValueInformation, ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
 import { calculateGridValuesRange } from '../utils'
 import { clearISOXMLManagerData, setISOXMLManagerData } from './isoxmlFileInfo'
 
@@ -10,7 +10,7 @@ export enum ISOXMLFileState {
     ERROR
 }
 
-type GridInfo = GridValueDescription & {min: number, max: number}
+type GridInfo = ValueInformation & {min: number, max: number}
 
 type IsoxmlFileState = {
     state: ISOXMLFileState

@@ -1,6 +1,6 @@
 import { ExtentsLeftBottomRightTop } from "@deck.gl/core/utils/positions";
 import chroma from "chroma-js";
-import { ExtendedGrid, Grid, GridValueDescription } from "isoxml";
+import { ExtendedGrid, Grid, ValueInformation } from "isoxml";
 
 export function gridBounds(grid: Grid): ExtentsLeftBottomRightTop {
     const {
@@ -47,6 +47,6 @@ export function getGridValue(grid: ExtendedGrid, x: number, y: number): number {
 
 export const GRID_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).reverse())
 
-export const convertValue = (value: number, valueDescription: GridValueDescription): number => {
+export const convertValue = (value: number, valueDescription: ValueInformation): number => {
     return value * valueDescription.scale + valueDescription.offset
 }

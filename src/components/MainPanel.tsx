@@ -6,6 +6,7 @@ import { makeStyles } from '@material-ui/core/styles'
 
 import { ISOXMLFileState, isoxmlFileStateSelector, loadFile } from '../commonStores/isoxmlFile'
 import Button from '@material-ui/core/Button'
+import Typography from '@material-ui/core/Typography'
 import { ISOXMLFileStructure } from './ISOXMLFileStructure'
 
 const useStyles = makeStyles({
@@ -72,7 +73,7 @@ export function MainPanel() {
                 <div className={classes.dropMessage}>
                     {errorMsg}
                     <Button variant="contained" color="primary" onClick={open}>Select an ISOXML file</Button>
-                    <h3>or drop it here</h3>
+                    <Typography variant="h6">or drop it here</Typography>
                 </div>
             )}
             {fileState === ISOXMLFileState.LOADING && (

@@ -7,6 +7,7 @@ export const visualSettingsSlice = createSlice({
     initialState: {
         gridsVisibility: {},
         timeLogsVisibility: {},
+        timeLogsSelectedDDI: {}
     },
     reducers: {
         toggleGridVisibility: (state, action) => {
@@ -24,6 +25,10 @@ export const visualSettingsSlice = createSlice({
         setTimeLogVisibility: (state, action) => {
             const {timeLogId, visible} = action.payload
             state.timeLogsVisibility[timeLogId] = visible
+        },
+        setTimeLogDDI: (state, action) => {
+            const {timeLogId, ddi} = action.payload
+            state.timeLogsSelectedDDI[timeLogId] = ddi
         }
     },
     extraReducers: builder => {
@@ -35,10 +40,17 @@ export const visualSettingsSlice = createSlice({
 })
 
 // actions
-export const { toggleGridVisibility, setGridVisibility, toggleTimeLogVisibility, setTimeLogVisibility } = visualSettingsSlice.actions
+export const {
+    toggleGridVisibility,
+    setGridVisibility,
+    toggleTimeLogVisibility,
+    setTimeLogVisibility,
+    setTimeLogDDI
+} = visualSettingsSlice.actions
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
 export const timeLogsVisibilitySelector = state => state.visualSettings.timeLogsVisibility
+export const timeLogsSelectedDDISelector = state => state.visualSettings.timeLogsSelectedDDI
 
 export default visualSettingsSlice.reducer
