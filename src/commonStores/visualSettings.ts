@@ -1,6 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 import { startLoading } from './isoxmlFile'
+import { getTimeLogsCache } from './isoxmlFileInfo'
+
+const setDefaultDDI = (state, id) => {
+    if (!state.timeLogsSelectedDDI[id] && state.timeLogsVisibility[id]) {
+        const timeLogCache = getTimeLogsCache()[id]
+        const variableValuesInfo = timeLogCache.valuesInfo.find(
+            valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
+        )
+        if (variableValuesInfo) {
+            state.timeLogsSelectedDDI[id] = variableValuesInfo.DDIString
+        }
+    }
+}
 
 export const visualSettingsSlice = createSlice({
     name: 'visualSettings',
@@ -21,10 +34,12 @@ export const visualSettingsSlice = createSlice({
         toggleTimeLogVisibility: (state, action) => {
             const id = action.payload.timeLogId
             state.timeLogsVisibility[id] = !state.timeLogsVisibility[id]
+            setDefaultDDI(state, id)
         },
         setTimeLogVisibility: (state, action) => {
             const {timeLogId, visible} = action.payload
             state.timeLogsVisibility[timeLogId] = visible
+            setDefaultDDI(state, timeLogId)
         },
         setTimeLogDDI: (state, action) => {
             const {timeLogId, ddi} = action.payload

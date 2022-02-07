@@ -5,7 +5,8 @@ import { ExtendedTimeLog, ISOXMLManager, TimeLogInfo } from "isoxml"
 
 interface ISOXMLManagerInfo {
     isoxmlManager: ISOXMLManager
-    timeLogsCache?: {[timeLogId: string]: TimeLogInfo}
+    timeLogsCache: {[timeLogId: string]: TimeLogInfo}
+    timeLogsGeoJSONs: {[timeLogId: string]: any}
 }
 
 let isoxmlManagerInfo: ISOXMLManagerInfo
@@ -27,6 +28,36 @@ export const parseTimeLog = (timeLogId: string) => {
     isoxmlManagerInfo.timeLogsCache[timeLogId] = timeLog.parseBinaryFile()
 }
 
+export const getTimeLogGeoJSON = (timeLogId: string) => {
+    if (!isoxmlManagerInfo) {
+        return null
+    }
+
+    if (isoxmlManagerInfo?.timeLogsGeoJSONs[timeLogId]) {
+        return isoxmlManagerInfo.timeLogsGeoJSONs[timeLogId]
+    }
+
+    parseTimeLog(timeLogId)
+
+    const timeLogs = isoxmlManagerInfo.timeLogsCache[timeLogId].timeLogs
+
+    const geoJSON = {
+        type: 'FeatureCollection',
+        features: timeLogs
+            .map(timeLogItem => ({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [timeLogItem.position.PositionEast, timeLogItem.position.PositionNorth]
+                },
+                properties: timeLogItem.values
+            }))
+    }
+
+    isoxmlManagerInfo.timeLogsGeoJSONs[timeLogId] = geoJSON
+    return geoJSON
+}
+
 export const getISOXMLManager = () => isoxmlManagerInfo?.isoxmlManager
 export const getTimeLogsCache = () => isoxmlManagerInfo?.timeLogsCache
 
@@ -37,6 +68,7 @@ export const clearISOXMLManagerData = () => {
 export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager, timeLogsCache: {[timeLogId: string]: TimeLogInfo}) => {
     isoxmlManagerInfo = {
         isoxmlManager,
-        timeLogsCache
+        timeLogsCache,
+        timeLogsGeoJSONs: {}
     }
 }

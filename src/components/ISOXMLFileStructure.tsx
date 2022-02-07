@@ -18,7 +18,7 @@ import {
     toggleTimeLogVisibility
 } from '../commonStores/visualSettings'
 import { fitBounds } from '../commonStores/map'
-import { DataLogValueInfo, Task, ValueInformation } from 'isoxml'
+import { DataLogValueInfo, ExtendedTimeLog, Task, ValueInformation } from 'isoxml'
 import { convertValue, gridBounds, GRID_COLOR_SCALE } from '../utils'
 import chroma from 'chroma-js'
 import Tooltip from '@material-ui/core/Tooltip'
@@ -33,6 +33,10 @@ const backgroundGradientFromPalette = (scale: chroma.Scale) => {
 }
 
 const useStyles = makeStyles({
+    noTasskMessage: {
+        textAlign: 'center',
+        padding: '8px'
+    },
     taskContainer: {
         padding: '8px',
     },
@@ -73,6 +77,9 @@ const useStyles = makeStyles({
         width: '100%',
         fontSize: '0.9rem',
         fontStyle: 'italic'
+    },
+    entityInfoContainer: {
+        paddingBottom: 16
     }
 })
 
@@ -171,8 +178,8 @@ export function ISOXMLFileStructure() {
 
     const tasks = isoxmlManager.rootElement.attributes.Task
 
-    if (tasks.length === 0) {
-        return <div>No tasks in this TaskSet</div>
+    if (!tasks?.length) {
+        return <Typography className={classes.noTasskMessage}>No tasks in this TaskSet</Typography>
     }
 
     return (<>
@@ -181,7 +188,8 @@ export function ISOXMLFileStructure() {
             const xmlId = isoxmlManager.getReferenceByEntity(task).xmlId
             const gridInfo = gridsInfo[xmlId]
 
-            const timeLogs = task.attributes.TimeLog || []
+            const timeLogs = (task.attributes.TimeLog || [])
+                .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogInfo)
 
             return (
                 <div key={xmlId} className={classes.taskContainer}>
@@ -209,9 +217,8 @@ export function ISOXMLFileStructure() {
                             variableValuesInfo = timeLogCache[timeLogId].valuesInfo.filter(
                                 valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
                             )
-                            selectedValueInfo = timeLogsSelectedDDI[timeLogId]
-                                ? variableValuesInfo.find(info => info.DDI === timeLogsSelectedDDI[timeLogId])
-                                : variableValuesInfo[0]
+                            selectedValueInfo = variableValuesInfo
+                                .find(info => info.DDIString === timeLogsSelectedDDI[timeLogId])
                         }
                         return (
                             <div key={timeLogId} className={classes.gridContainer}>
@@ -222,17 +229,21 @@ export function ISOXMLFileStructure() {
                                     entityId={timeLogId}
                                     isVisible={!!timeLogsVisibility[timeLogId]}
                                 />
-                                {timeLogsVisibility[timeLogId] && variableValuesInfo.length > 0 && (<>
+                                {timeLogsVisibility[timeLogId] && variableValuesInfo.length > 0 && (<div className={classes.entityInfoContainer}>
                                     <Select
                                         className={classes.timeLogDDISelect}
-                                        value={selectedValueInfo.DDI}
+                                        value={selectedValueInfo.DDIString}
                                         onChange={onTimeLogDDIChange}
                                     >
                                         {variableValuesInfo.map(valueInfo => (
-                                            <MenuItem key={valueInfo.DDI} value={valueInfo.DDI} data-entityid={timeLogId}>
+                                            <MenuItem
+                                                key={valueInfo.DDIString}
+                                                value={valueInfo.DDIString}
+                                                data-entityid={timeLogId}
+                                            >
                                                 {valueInfo.DDEntityName
-                                                    ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDI})`
-                                                    : `DDI ${valueInfo.DDI}`
+                                                    ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
+                                                    : `DDI ${valueInfo.DDIString}`
                                                 }
                                             </MenuItem>
                                         ))}
@@ -243,7 +254,7 @@ export function ISOXMLFileStructure() {
                                         max={selectedValueInfo.maxValue}
                                         hideTitle={true}
                                     />
-                                </>)}
+                                </div>)}
                             </div>
                         )
                     })}

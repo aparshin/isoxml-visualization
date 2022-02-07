@@ -4,14 +4,14 @@ import { makeStyles } from '@material-ui/core/styles'
 import { WebMercatorViewport } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
 import { ExtendedGrid, Task } from 'isoxml';
-import { gridsVisibilitySelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings';
+import { gridsVisibilitySelector, timeLogsSelectedDDISelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings';
 import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile';
 import ISOXMLGridLayer from '../mapLayers/GridLayer';
 import { fitBoundsSelector } from '../commonStores/map'
-import { convertValue, getGridValue } from '../utils'
+import { convertValue, getGridValue, GRID_COLOR_SCALE } from '../utils'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
-import { getISOXMLManager, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
+import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
 
 const useStyles = makeStyles({
     tooltipBase: {
@@ -47,12 +47,15 @@ export function Map() {
         zoom: 13
     })
 
+    const isoxmlManager = getISOXMLManager()
+    const timeLogsCache = getTimeLogsCache()
+
     const fitBounds = useSelector(fitBoundsSelector)
     const visibleGrids = useSelector(gridsVisibilitySelector)
     const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
-    const isoxmlManager = getISOXMLManager()
-    const timeLogsCache = getTimeLogsCache()
+    const timeLogSelectedDDI = useSelector(timeLogsSelectedDDISelector)
+
     const gridLayers = Object.keys(visibleGrids)
         .filter(taskId => visibleGrids[taskId])
         .map(taskId => {
@@ -60,25 +63,34 @@ export function Map() {
 
             return new ISOXMLGridLayer(taskId, task.attributes.Grid[0] as ExtendedGrid, gridsInfo[taskId])
         })
-    const timeLogLayers = Object.keys(visibleTimeLogs).filter(key => visibleTimeLogs[key]).map(timeLogId => {
-        const timeLog = timeLogsCache[timeLogId].timeLogs
-        const geoJSON = {
-            type: 'FeatureCollection',
-            features: timeLog.map(timeLogItem => ({
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: [timeLogItem.position.PositionEast, timeLogItem.position.PositionNorth]
-                },
-                properties: {}
-            }))
-        }
 
-        return new GeoJsonLayer({
-            id: timeLogId,
-            data: geoJSON
+    const timeLogLayers = Object.keys(visibleTimeLogs)
+        .filter(key => visibleTimeLogs[key])
+        .map(timeLogId => {
+            const ddi = timeLogSelectedDDI[timeLogId]
+            const geoJSON = getTimeLogGeoJSON(timeLogId)
+            const valuesInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.DDIString === ddi)
+
+            const palette = GRID_COLOR_SCALE.domain([valuesInfo.minValue, valuesInfo.maxValue])
+
+            return new GeoJsonLayer({
+                id: timeLogId,
+                data: geoJSON,
+                getFillColor: (point: any) => {
+                    if (!(ddi in point.properties)) {
+                        return [0, 0, 0, 100]
+                    }
+
+                    return palette(point.properties[ddi] as number).rgb()
+                },
+                stroked: false,
+                updateTriggers: {
+                    getFillColor: [ddi]
+                },
+                pointRadiusUnits: 'pixels',
+                getPointRadius: 5
+            })
         })
-    })
     
     const viewStateRef = useRef(null)
 
@@ -116,7 +128,10 @@ export function Map() {
     useEffect(() => {
         if (fitBounds) {
             const viewport = new WebMercatorViewport(viewStateRef.current)
-            const {longitude, latitude, zoom} = viewport.fitBounds([fitBounds.slice(0, 2), fitBounds.slice(2, 4)]) as any
+            const {longitude, latitude, zoom} = viewport.fitBounds(
+                [fitBounds.slice(0, 2), fitBounds.slice(2, 4)],
+                {padding: 8}
+            ) as any
             setInitialViewState({
                 longitude,
                 latitude,
