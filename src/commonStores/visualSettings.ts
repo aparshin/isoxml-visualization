@@ -3,14 +3,14 @@ import { createSlice } from '@reduxjs/toolkit'
 import { startLoading } from './isoxmlFile'
 import { getTimeLogsCache } from './isoxmlFileInfo'
 
-const setDefaultDDI = (state, id) => {
-    if (!state.timeLogsSelectedDDI[id] && state.timeLogsVisibility[id]) {
+const setDefaultTimeLogValue = (state, id) => {
+    if (!state.timeLogsSelectedValue[id] && state.timeLogsVisibility[id]) {
         const timeLogCache = getTimeLogsCache()[id]
         const variableValuesInfo = timeLogCache.valuesInfo.find(
             valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
         )
         if (variableValuesInfo) {
-            state.timeLogsSelectedDDI[id] = variableValuesInfo.DDIString
+            state.timeLogsSelectedValue[id] = variableValuesInfo.valueKey
         }
     }
 }
@@ -20,7 +20,7 @@ export const visualSettingsSlice = createSlice({
     initialState: {
         gridsVisibility: {},
         timeLogsVisibility: {},
-        timeLogsSelectedDDI: {}
+        timeLogsSelectedValue: {}
     },
     reducers: {
         toggleGridVisibility: (state, action) => {
@@ -34,16 +34,16 @@ export const visualSettingsSlice = createSlice({
         toggleTimeLogVisibility: (state, action) => {
             const id = action.payload.timeLogId
             state.timeLogsVisibility[id] = !state.timeLogsVisibility[id]
-            setDefaultDDI(state, id)
+            setDefaultTimeLogValue(state, id)
         },
         setTimeLogVisibility: (state, action) => {
             const {timeLogId, visible} = action.payload
             state.timeLogsVisibility[timeLogId] = visible
-            setDefaultDDI(state, timeLogId)
+            setDefaultTimeLogValue(state, timeLogId)
         },
-        setTimeLogDDI: (state, action) => {
-            const {timeLogId, ddi} = action.payload
-            state.timeLogsSelectedDDI[timeLogId] = ddi
+        setTimeLogValue: (state, action) => {
+            const {timeLogId, valueKey} = action.payload
+            state.timeLogsSelectedValue[timeLogId] = valueKey
         }
     },
     extraReducers: builder => {
@@ -60,12 +60,12 @@ export const {
     setGridVisibility,
     toggleTimeLogVisibility,
     setTimeLogVisibility,
-    setTimeLogDDI
+    setTimeLogValue
 } = visualSettingsSlice.actions
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
 export const timeLogsVisibilitySelector = state => state.visualSettings.timeLogsVisibility
-export const timeLogsSelectedDDISelector = state => state.visualSettings.timeLogsSelectedDDI
+export const timeLogsSelectedValueSelector = state => state.visualSettings.timeLogsSelectedValue
 
 export default visualSettingsSlice.reducer

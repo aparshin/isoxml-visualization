@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { ValueInformation, ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
 import { calculateGridValuesRange } from '../utils'
-import { clearISOXMLManagerData, setISOXMLManagerData } from './isoxmlFileInfo'
+import { clearISOXMLManagerData, getISOXMLManager, setISOXMLManagerData } from './isoxmlFileInfo'
 
 export enum ISOXMLFileState {
     NOT_LOADED,
@@ -31,10 +31,9 @@ export const isoxmlFileSlice = createSlice({
             clearISOXMLManagerData()
         },
 
-        loadingDone: (state, action) => {
-            const isoxmlManager = action.payload
+        loadingDone: state => {
+            const isoxmlManager = getISOXMLManager()
             state.state = ISOXMLFileState.LOADED
-            setISOXMLManagerData(isoxmlManager, {})
             state.gridsInfo = {}
             ;(isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
                 const grid = task.attributes.Grid?.[0]
@@ -73,7 +72,8 @@ export const loadFile = (file: File) => async (dispatch: any) => {
         const array = new Uint8Array(reader.result as ArrayBuffer)
         try {
             await isoxmlManager.parseISOXMLFile(array, 'application/zip')
-            dispatch(loadingDone(isoxmlManager))
+            setISOXMLManagerData(isoxmlManager, {})
+            dispatch(loadingDone())
         } catch(e) {
             dispatch(loadingError())
         }

@@ -72,7 +72,7 @@ export function MainPanel() {
             {(fileState === ISOXMLFileState.NOT_LOADED || fileState === ISOXMLFileState.ERROR) && (
                 <div className={classes.dropMessage}>
                     {errorMsg}
-                    <Button variant="contained" color="primary" onClick={open}>Select an ISOXML file</Button>
+                    <Button variant="contained" color="primary" onClick={open}>Select ISOXML ZIP file</Button>
                     <Typography variant="h6">or drop it here</Typography>
                 </div>
             )}
@@ -84,7 +84,7 @@ export function MainPanel() {
             {fileState === ISOXMLFileState.LOADED && (
                 <div className={classes.loadedContainer}>
                     <div className={classes.loadedHeader}>
-                        <Button size="small" variant="contained" color="primary" onClick={open}>Select an ISOXML file</Button>
+                        <Button size="small" variant="contained" color="primary" onClick={open}>Open another ISOXML ZIP file</Button>
                     </div>
                     <div className={classes.loadedBody}>
                         <ISOXMLFileStructure />

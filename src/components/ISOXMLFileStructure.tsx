@@ -10,16 +10,16 @@ import { useDispatch, useSelector } from 'react-redux'
 import {
     gridsVisibilitySelector,
     setGridVisibility,
-    setTimeLogDDI,
+    setTimeLogValue,
     setTimeLogVisibility,
-    timeLogsSelectedDDISelector,
+    timeLogsSelectedValueSelector,
     timeLogsVisibilitySelector,
     toggleGridVisibility,
     toggleTimeLogVisibility
 } from '../commonStores/visualSettings'
 import { fitBounds } from '../commonStores/map'
 import { DataLogValueInfo, ExtendedTimeLog, Task, ValueInformation } from 'isoxml'
-import { convertValue, gridBounds, GRID_COLOR_SCALE } from '../utils'
+import { convertValue, gridBounds, GRID_COLOR_SCALE, TIMELOG_COLOR_SCALE } from '../utils'
 import chroma from 'chroma-js'
 import Tooltip from '@material-ui/core/Tooltip'
 import { getISOXMLManager, getTimeLogsCache, parseTimeLog } from '../commonStores/isoxmlFileInfo'
@@ -63,6 +63,10 @@ const useStyles = makeStyles({
         height: 16,
         background: backgroundGradientFromPalette(GRID_COLOR_SCALE)
     },
+    timeLogPalette: {
+        height: 16,
+        background: backgroundGradientFromPalette(TIMELOG_COLOR_SCALE)
+    },
     gridRangeContainer: {
         display: 'flex'
     },
@@ -80,6 +84,14 @@ const useStyles = makeStyles({
     },
     entityInfoContainer: {
         paddingBottom: 16
+    },
+    timeLogMenuItem: {
+        flexDirection: 'column',
+        alignItems: 'start'
+    },
+    timeLogMenuItemLine: {
+        overflowX: 'hidden',
+        textOverflow: 'ellipsis'
     }
 })
 
@@ -116,16 +128,17 @@ interface ValueDataPaletteProps {
     valueInfo: ValueInformation
     min: number
     max: number
+    paletteClassName: string
     hideTitle?: boolean
 }
 
-function ValueDataPalette({valueInfo, min, max, hideTitle}: ValueDataPaletteProps) {
+function ValueDataPalette({valueInfo, min, max, hideTitle, paletteClassName}: ValueDataPaletteProps) {
     const classes = useStyles()
     return (<>
         {!hideTitle && (
             <Typography className={classes.gridDDInfo}>{valueInfo.DDEntityName}</Typography>
         )}
-        <div className={classes.gridPalette}></div>
+        <div className={paletteClassName}></div>
         <div className={classes.gridRangeContainer}>
             <Typography className={classes.gridRangeMin}>{convertValue(min, valueInfo)} {valueInfo.unit}</Typography>
             <Typography className={classes.gridRangeMax}>{convertValue(max, valueInfo)} {valueInfo.unit}</Typography>
@@ -142,7 +155,7 @@ export function ISOXMLFileStructure() {
     const gridsVisibility = useSelector(gridsVisibilitySelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
     const timeLogsVisibility = useSelector(timeLogsVisibilitySelector)
-    const timeLogsSelectedDDI = useSelector(timeLogsSelectedDDISelector)
+    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
 
     const dispatch = useDispatch()
 
@@ -171,9 +184,10 @@ export function ISOXMLFileStructure() {
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
     }, [dispatch, timeLogCache])
 
-    const onTimeLogDDIChange = useCallback((event, child) => {
-        const timeLogId = event.nativeEvent.target.dataset.entityid
-        dispatch(setTimeLogDDI({timeLogId, ddi: event.target.value}))
+    const onTimeLogDDIChange = useCallback((event) => {
+        const parent = event.nativeEvent.path.find(elem => elem.dataset.entityid)
+        const timeLogId = parent?.dataset.entityid
+        dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
     }, [dispatch])
 
     const tasks = isoxmlManager.rootElement.attributes.Task
@@ -205,7 +219,14 @@ export function ISOXMLFileStructure() {
                             isVisible={!!gridsVisibility[xmlId]}
                         />
                         {gridsVisibility[xmlId] && (
-                            <ValueDataPalette valueInfo={gridInfo} min={gridInfo.min} max={gridInfo.max}/>
+                            <div className={classes.entityInfoContainer}>
+                                <ValueDataPalette
+                                    valueInfo={gridInfo}
+                                    min={gridInfo.min}
+                                    max={gridInfo.max}
+                                    paletteClassName={classes.gridPalette}
+                                />
+                            </div>
                         )}
                     </div>)}
                     {timeLogs.map(timeLog => {
@@ -218,7 +239,7 @@ export function ISOXMLFileStructure() {
                                 valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
                             )
                             selectedValueInfo = variableValuesInfo
-                                .find(info => info.DDIString === timeLogsSelectedDDI[timeLogId])
+                                .find(info => info.valueKey === timeLogsSelectedValue[timeLogId])
                         }
                         return (
                             <div key={timeLogId} className={classes.gridContainer}>
@@ -229,32 +250,40 @@ export function ISOXMLFileStructure() {
                                     entityId={timeLogId}
                                     isVisible={!!timeLogsVisibility[timeLogId]}
                                 />
-                                {timeLogsVisibility[timeLogId] && variableValuesInfo.length > 0 && (<div className={classes.entityInfoContainer}>
-                                    <Select
-                                        className={classes.timeLogDDISelect}
-                                        value={selectedValueInfo.DDIString}
-                                        onChange={onTimeLogDDIChange}
-                                    >
-                                        {variableValuesInfo.map(valueInfo => (
-                                            <MenuItem
-                                                key={valueInfo.DDIString}
-                                                value={valueInfo.DDIString}
-                                                data-entityid={timeLogId}
-                                            >
-                                                {valueInfo.DDEntityName
-                                                    ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
-                                                    : `DDI ${valueInfo.DDIString}`
-                                                }
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                    <ValueDataPalette
-                                        valueInfo={selectedValueInfo}
-                                        min={selectedValueInfo.minValue}
-                                        max={selectedValueInfo.maxValue}
-                                        hideTitle={true}
-                                    />
-                                </div>)}
+                                {timeLogsVisibility[timeLogId] && variableValuesInfo.length > 0 && (
+                                    <div className={classes.entityInfoContainer}>
+                                        <Select
+                                            className={classes.timeLogDDISelect}
+                                            value={selectedValueInfo.valueKey}
+                                            onChange={onTimeLogDDIChange}
+                                        >
+                                            {variableValuesInfo.map(valueInfo => (
+                                                <MenuItem
+                                                    className={classes.timeLogMenuItem}
+                                                    key={valueInfo.valueKey}
+                                                    value={valueInfo.valueKey}
+                                                    data-entityid={timeLogId}
+                                                >
+                                                    <div className={classes.timeLogMenuItemLine}>{
+                                                        valueInfo.DDEntityName
+                                                            ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
+                                                            : `DDI ${valueInfo.DDIString}`
+                                                    }</div>
+                                                    <div className={classes.timeLogMenuItemLine}>
+                                                        {valueInfo.deviceElementDesignator || `Device ${valueInfo.deviceElementId}`}
+                                                    </div>
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                        <ValueDataPalette
+                                            valueInfo={selectedValueInfo}
+                                            min={selectedValueInfo.minValue}
+                                            max={selectedValueInfo.maxValue}
+                                            paletteClassName={classes.timeLogPalette}
+                                            hideTitle={true}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )
                     })}

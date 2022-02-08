@@ -2,6 +2,7 @@ import GL from '@luma.gl/constants'
 import { BitmapLayer } from '@deck.gl/layers'
 import { ExtendedGrid } from "isoxml"
 import { gridBounds, GRID_COLOR_SCALE } from "../utils"
+import chroma from 'chroma-js'
 
 export default class ISOXMLGridLayer extends BitmapLayer<unknown>{
     constructor(id: string, grid: ExtendedGrid, range: {min: number, max: number}) {
@@ -16,7 +17,7 @@ export default class ISOXMLGridLayer extends BitmapLayer<unknown>{
 
         const cells = new Int32Array(grid.binaryData.buffer)
 
-        const palette = GRID_COLOR_SCALE.domain([range.min, range.max])
+        const palette = chroma.scale((GRID_COLOR_SCALE.colors as any)()).domain([range.min, range.max])
 
         const ctx = canvas.getContext('2d')
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)

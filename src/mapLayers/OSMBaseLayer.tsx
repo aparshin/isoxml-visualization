@@ -38,7 +38,7 @@ export const OSMBasemap = new TileLayer({
     // and we aren't limited by the browser to a certain number per domain.
     maxRequests: 20,
 
-    pickable: true,
+    pickable: false,
     highlightColor: [60, 60, 60, 40],
     minZoom: 0,
     maxZoom: 19,

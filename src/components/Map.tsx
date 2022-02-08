@@ -3,15 +3,16 @@ import { useSelector } from 'react-redux'
 import { makeStyles } from '@material-ui/core/styles'
 import { WebMercatorViewport } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
-import { ExtendedGrid, Task } from 'isoxml';
-import { gridsVisibilitySelector, timeLogsSelectedDDISelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings';
-import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile';
-import ISOXMLGridLayer from '../mapLayers/GridLayer';
+import { ExtendedGrid, Task } from 'isoxml'
+import { gridsVisibilitySelector, timeLogsSelectedValueSelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings'
+import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
+import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
-import { convertValue, getGridValue, GRID_COLOR_SCALE } from '../utils'
+import { convertValue, getGridValue, TIMELOG_COLOR_SCALE } from '../utils'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
 import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
+import chroma from 'chroma-js'
 
 const useStyles = makeStyles({
     tooltipBase: {
@@ -53,8 +54,8 @@ export function Map() {
     const fitBounds = useSelector(fitBoundsSelector)
     const visibleGrids = useSelector(gridsVisibilitySelector)
     const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
+    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
-    const timeLogSelectedDDI = useSelector(timeLogsSelectedDDISelector)
 
     const gridLayers = Object.keys(visibleGrids)
         .filter(taskId => visibleGrids[taskId])
@@ -67,28 +68,28 @@ export function Map() {
     const timeLogLayers = Object.keys(visibleTimeLogs)
         .filter(key => visibleTimeLogs[key])
         .map(timeLogId => {
-            const ddi = timeLogSelectedDDI[timeLogId]
+            const valueKey = timeLogsSelectedValue[timeLogId]
             const geoJSON = getTimeLogGeoJSON(timeLogId)
-            const valuesInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.DDIString === ddi)
+            const valuesInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.valueKey === valueKey)
 
-            const palette = GRID_COLOR_SCALE.domain([valuesInfo.minValue, valuesInfo.maxValue])
+            const palette = chroma.scale((TIMELOG_COLOR_SCALE.colors as any)()).domain([valuesInfo.minValue, valuesInfo.maxValue])
 
             return new GeoJsonLayer({
                 id: timeLogId,
-                data: geoJSON,
+                data: {
+                    ...geoJSON,
+                    features: geoJSON.features.filter(feature => valueKey in feature.properties)
+                },
                 getFillColor: (point: any) => {
-                    if (!(ddi in point.properties)) {
-                        return [0, 0, 0, 100]
-                    }
-
-                    return palette(point.properties[ddi] as number).rgb()
+                    return palette(point.properties[valueKey] as number).rgb()
                 },
                 stroked: false,
                 updateTriggers: {
-                    getFillColor: [ddi]
+                    getFillColor: [valueKey]
                 },
                 pointRadiusUnits: 'pixels',
-                getPointRadius: 5
+                getPointRadius: 5,
+                pickable: true
             })
         })
     
@@ -100,30 +101,48 @@ export function Map() {
     }, [])
 
     const onMapClick = useCallback(pickInfo => {
-        if (!pickInfo.layer || !(pickInfo.layer instanceof ISOXMLGridLayer)) {
+        if (!pickInfo.layer) {
             setTooltip(null)
             return
         }
-        const pixel = pickInfo.bitmap.pixel
-        const taskId = pickInfo.layer.id
 
-        const task = isoxmlManager.getEntityByXmlId<Task>(taskId)
+        if (pickInfo.layer instanceof ISOXMLGridLayer) {
+            const pixel = pickInfo.bitmap.pixel
+            const taskId = pickInfo.layer.id
 
-        const grid = task.attributes.Grid[0] as ExtendedGrid
+            const task = isoxmlManager.getEntityByXmlId<Task>(taskId)
 
-        const value = getGridValue(grid, pixel[0], pixel[1])
-        if (value) {
-            const gridInfo = gridsInfo[taskId]
-            const valueConverted = convertValue(value, gridInfo)
+            const grid = task.attributes.Grid[0] as ExtendedGrid
+
+            const value = getGridValue(grid, pixel[0], pixel[1])
+            if (value) {
+                const gridInfo = gridsInfo[taskId]
+                const valueConverted = convertValue(value, gridInfo)
+                setTooltip({
+                    x: pickInfo.x,
+                    y: pickInfo.y,
+                    value: `${valueConverted} ${gridInfo.unit}`
+                })
+            } else {
+                setTooltip(null)
+            }
+        } else if (pickInfo.layer instanceof GeoJsonLayer) {
+            const timeLogId = pickInfo.layer.id
+            const valueKey = timeLogsSelectedValue[timeLogId]
+            const value = pickInfo.object.properties[valueKey]
+            const timeLogInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.valueKey === valueKey)
+
+            const valueConverted = convertValue(value, timeLogInfo)
+
             setTooltip({
                 x: pickInfo.x,
                 y: pickInfo.y,
-                value: `${valueConverted} ${gridInfo.unit}`
+                value: `${valueConverted} ${timeLogInfo.unit}`
             })
         } else {
             setTooltip(null)
         }
-    }, [isoxmlManager, gridsInfo])
+    }, [isoxmlManager, gridsInfo, timeLogsSelectedValue, timeLogsCache])
 
     useEffect(() => {
         if (fitBounds) {

@@ -8,13 +8,7 @@ const store = configureStore({
         isoxmlFile: isoxmlFileReducer,
         visualSettings: visualSettingsReducer,
         map: mapReducer
-    },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: {
-                ignoredActions: ['isoxmlFile/loadingDone'],
-            },
-        }),
+    }
 })
 
 export type RootState = ReturnType<typeof store.getState>
