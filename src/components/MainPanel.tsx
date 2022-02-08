@@ -8,6 +8,7 @@ import { ISOXMLFileState, isoxmlFileStateSelector, loadFile } from '../commonSto
 import Button from '@material-ui/core/Button'
 import Typography from '@material-ui/core/Typography'
 import { ISOXMLFileStructure } from './ISOXMLFileStructure'
+import { GitHub as GithubIcon} from '@material-ui/icons'
 
 const useStyles = makeStyles({
     dropzone: {
@@ -50,6 +51,17 @@ const useStyles = makeStyles({
         textAlign: 'center',
         borderBottom: '1px solid gray',
         padding: '8px'
+    },
+
+    privacyNote: {
+        fontStyle: 'italic',
+        marginTop: '64px'
+    },
+
+    githubLink: {
+        position: 'absolute',
+        bottom: 8,
+        textTransform: 'none'
     }
 })
 
@@ -74,6 +86,15 @@ export function MainPanel() {
                     {errorMsg}
                     <Button variant="contained" color="primary" onClick={open}>Select ISOXML ZIP file</Button>
                     <Typography variant="h6">or drop it here</Typography>
+
+                    <Typography className={classes.privacyNote}>All your data will stay <br/> inside your browser!</Typography>
+                    <Button
+                        href="https://github.com/aparshin/isoxml-visualization"
+                        target="_blank"
+                        size="small"
+                        startIcon={<GithubIcon />}
+                        className={classes.githubLink}
+                    >Project on GitHub</Button>
                 </div>
             )}
             {fileState === ISOXMLFileState.LOADING && (
