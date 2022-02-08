@@ -10,7 +10,7 @@ export enum ISOXMLFileState {
     ERROR
 }
 
-type GridInfo = ValueInformation & {min: number, max: number}
+export type GridInfo = ValueInformation & {min: number, max: number}
 
 type IsoxmlFileState = {
     state: ISOXMLFileState

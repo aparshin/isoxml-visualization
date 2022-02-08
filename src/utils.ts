@@ -51,3 +51,11 @@ export const TIMELOG_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).re
 export const convertValue = (value: number, valueDescription: ValueInformation): number => {
     return value * valueDescription.scale + valueDescription.offset
 }
+
+export function backgroundGradientFromPalette (scale: chroma.Scale) {
+  const len = 10
+  const stops = scale.colors(len, null).map((color, idx) => {
+    return `${color.css()} ${idx / (len - 1) * 100}%`
+  })
+  return `linear-gradient(90deg,${stops.join(',')})`
+}

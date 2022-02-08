@@ -63,7 +63,7 @@ export function MainPanel() {
     const fileState = useSelector(isoxmlFileStateSelector)
 
     const errorMsg = fileState === ISOXMLFileState.ERROR && (
-        <div className={classes.errorMsg}>Error loading ISOXML file</div>
+        <Typography className={classes.errorMsg}>Error loading ISOXML file</Typography>
     )
 
     return (
@@ -78,7 +78,7 @@ export function MainPanel() {
             )}
             {fileState === ISOXMLFileState.LOADING && (
                 <div className={classes.dropMessage}>
-                    <h3>Loading ISOXML file, please wait...</h3>
+                    <Typography variant="h6">Loading ISOXML file, please wait...</Typography>
                 </div>
             )}
             {fileState === ISOXMLFileState.LOADED && (
