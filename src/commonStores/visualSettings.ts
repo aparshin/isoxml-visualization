@@ -50,6 +50,7 @@ export const visualSettingsSlice = createSlice({
         builder.addCase(startLoading, state => {
             state.gridsVisibility = {}
             state.timeLogsVisibility = {}
+            state.timeLogsSelectedValue = {}
         })
     }
 })
