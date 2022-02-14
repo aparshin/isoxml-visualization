@@ -36,7 +36,10 @@ const useStyles = makeStyles({
 interface TooltipState {
     x: number, 
     y: number,
-    value: string
+    value: string,
+    layerType: 'grid' | 'timelog',
+    layerId: string
+    timeLogValueKey?: string
 }
 
 export function Map() {
@@ -122,7 +125,9 @@ export function Map() {
                 setTooltip({
                     x: pickInfo.x,
                     y: pickInfo.y,
-                    value: formattedValue
+                    value: formattedValue,
+                    layerType: 'grid',
+                    layerId: taskId
                 })
             } else {
                 setTooltip(null)
@@ -138,7 +143,10 @@ export function Map() {
             setTooltip({
                 x: pickInfo.x,
                 y: pickInfo.y,
-                value: formattedValue
+                value: formattedValue,
+                layerType: 'timelog',
+                layerId: timeLogId,
+                timeLogValueKey: valueKey
             })
         } else {
             setTooltip(null)
@@ -166,6 +174,16 @@ export function Map() {
 
     const classes = useStyles()
 
+    let isTooltipVisible = false
+    if (tooltip) {
+        if (tooltip.layerType === 'grid') {
+            isTooltipVisible = !!visibleGrids[tooltip.layerId]
+        } else {
+            isTooltipVisible = !!visibleTimeLogs[tooltip.layerId] &&
+                timeLogsSelectedValue[tooltip.layerId] === tooltip.timeLogValueKey
+        }
+    }
+
     return (<>
         <DeckGL
             initialViewState={initialViewState}
@@ -175,7 +193,7 @@ export function Map() {
             onClick={onMapClick}
         >
             <OSMCopyright />
-            {tooltip && (<>
+            {isTooltipVisible && (<>
                 <div className={classes.tooltipBase} style={{left: tooltip.x, top: tooltip.y}}/>
                 <div className={classes.tooltip} style={{left: tooltip.x, top: tooltip.y}}>
                     {tooltip.value}
