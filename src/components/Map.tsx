@@ -8,7 +8,7 @@ import { gridsVisibilitySelector, timeLogsSelectedValueSelector, timeLogsVisibil
 import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
-import { convertValue, getGridValue, TIMELOG_COLOR_SCALE } from '../utils'
+import { formatValue, getGridValue, TIMELOG_COLOR_SCALE } from '../utils'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
 import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
@@ -117,11 +117,12 @@ export function Map() {
             const value = getGridValue(grid, pixel[0], pixel[1])
             if (value) {
                 const gridInfo = gridsInfo[taskId]
-                const valueConverted = convertValue(value, gridInfo)
+                const formattedValue = formatValue(value, gridInfo)
+
                 setTooltip({
                     x: pickInfo.x,
                     y: pickInfo.y,
-                    value: `${valueConverted} ${gridInfo.unit}`
+                    value: formattedValue
                 })
             } else {
                 setTooltip(null)
@@ -132,12 +133,12 @@ export function Map() {
             const value = pickInfo.object.properties[valueKey]
             const timeLogInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.valueKey === valueKey)
 
-            const valueConverted = convertValue(value, timeLogInfo)
+            const formattedValue = formatValue(value, timeLogInfo)
 
             setTooltip({
                 x: pickInfo.x,
                 y: pickInfo.y,
-                value: `${valueConverted} ${timeLogInfo.unit}`
+                value: formattedValue
             })
         } else {
             setTooltip(null)

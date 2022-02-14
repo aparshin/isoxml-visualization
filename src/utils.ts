@@ -48,8 +48,9 @@ export function getGridValue(grid: ExtendedGrid, x: number, y: number): number {
 export const GRID_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).reverse())
 export const TIMELOG_COLOR_SCALE = chroma.scale(chroma.brewer.RdYlGn.slice(0).reverse())
 
-export const convertValue = (value: number, valueDescription: ValueInformation): number => {
-    return value * valueDescription.scale + valueDescription.offset
+export const formatValue = (value: number, valueDescription: ValueInformation): string => {
+    const scaledValue = value * valueDescription.scale + valueDescription.offset
+    return `${scaledValue.toFixed(valueDescription.numberOfDecimals)} ${valueDescription.unit}`
 }
 
 export function backgroundGradientFromPalette (scale: chroma.Scale) {

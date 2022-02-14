@@ -2,7 +2,7 @@ import React from "react"
 import { makeStyles } from '@material-ui/core/styles'
 import Typography from "@material-ui/core/Typography"
 import { ValueInformation } from "isoxml"
-import { convertValue } from "../../utils"
+import { formatValue } from "../../utils"
 
 const useStyles = makeStyles({
     gridRangeContainer: {
@@ -29,8 +29,8 @@ export function ValueDataPalette({valueInfo, min, max, paletteClassName}: ValueD
     return (<>
         <div className={paletteClassName}></div>
         <div className={classes.gridRangeContainer}>
-            <Typography className={classes.gridRangeMin}>{convertValue(min, valueInfo)} {valueInfo.unit}</Typography>
-            <Typography className={classes.gridRangeMax}>{convertValue(max, valueInfo)} {valueInfo.unit}</Typography>
+            <Typography className={classes.gridRangeMin}>{formatValue(min, valueInfo)}</Typography>
+            <Typography className={classes.gridRangeMax}>{formatValue(max, valueInfo)}</Typography>
         </div>
     </>)
 }
