@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { makeStyles } from '@material-ui/core/styles'
 import Typography from "@material-ui/core/Typography";
 import { Grid } from "isoxml";
 
-import { GridInfo } from "../../commonStores/isoxmlFile";
-import { backgroundGradientFromPalette, GRID_COLOR_SCALE } from "../../utils";
+import { isoxmlFileGridInfoSelector } from "../../commonStores/isoxmlFile";
+import { backgroundGradientFromPalette, gridBounds, GRID_COLOR_SCALE } from "../../utils";
 
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
+import { useDispatch, useSelector } from "react-redux";
+import { gridVisibilitySelector, setGridVisibility, toggleGridVisibility } from "../../commonStores/visualSettings";
+import { fitBounds } from "../../commonStores/map";
 
 const useStyles = makeStyles({
     gridContainer: {
@@ -27,22 +30,32 @@ const useStyles = makeStyles({
 })
 
 interface GridEntityProps {
-    xmlId: string
+    gridId: string
     grid: Grid
-    gridInfo: GridInfo
-    isVisible: boolean
-    onVisibilityClick: React.MouseEventHandler<HTMLButtonElement>
-    onZoomToClick: React.MouseEventHandler<HTMLButtonElement>
 }
 
-export function GridEntity({grid, xmlId, isVisible, onVisibilityClick, onZoomToClick, gridInfo}: GridEntityProps) {
+export function GridEntity({grid, gridId}: GridEntityProps) {
     const classes = useStyles()
+    const dispatch = useDispatch()
+
+    const isVisible = useSelector(state => gridVisibilitySelector(state, gridId))
+    const gridInfo = useSelector(state => isoxmlFileGridInfoSelector(state, gridId))
+
+    const onVisibilityClick = useCallback(() => {
+        dispatch(toggleGridVisibility({gridId}))
+    }, [dispatch, gridId])
+
+    const onZoomToClick = useCallback(() => {
+        dispatch(fitBounds(gridBounds(grid)))
+        dispatch(setGridVisibility({gridId, visible: true}))
+    }, [dispatch, grid, gridId])
+
+
     return (<>
         <EntityTitle
             title={`Grid ${grid.attributes.GridMaximumColumn}x${grid.attributes.GridMaximumRow}`}
             onVisibilityClick={onVisibilityClick}
             onZoomToClick={onZoomToClick}
-            entityId={xmlId}
             isVisible={isVisible}
         />
         {isVisible && (

@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useCallback } from "react";
 import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
-import { SelectInputProps } from "@material-ui/core/Select/SelectInput";
 import { makeStyles } from '@material-ui/core/styles'
 import { DataLogValueInfo } from "isoxml";
 import { backgroundGradientFromPalette, TIMELOG_COLOR_SCALE } from "../../utils";
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
+import { getTimeLogInfo, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
+import { useDispatch, useSelector } from "react-redux";
+import {
+    setTimeLogValue,
+    setTimeLogVisibility,
+    timeLogSelectedValueSelector,
+    timeLogVisibilitySelector,
+    toggleTimeLogVisibility
+} from "../../commonStores/visualSettings";
+import { fitBounds } from "../../commonStores/map";
 
 const useStyles = makeStyles({
     timeLogPalette: {
@@ -33,40 +42,60 @@ const useStyles = makeStyles({
 
 interface TimeLogEntityProps {
     timeLogId: string
-    isVisible: boolean
-    valuesInfo: DataLogValueInfo[]
-    selectedValueInfo: DataLogValueInfo
-    onVisibilityClick: React.MouseEventHandler<HTMLButtonElement>
-    onZoomToClick: React.MouseEventHandler<HTMLButtonElement>
-    onTimeLogValueChange: SelectInputProps['onChange']
 }
 
-export function TimeLogEntity({
-    timeLogId,
-    isVisible,
-    valuesInfo,
-    selectedValueInfo,
-    onVisibilityClick,
-    onZoomToClick,
-    onTimeLogValueChange
-}: TimeLogEntityProps) {
+export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const classes = useStyles()
+    const dispatch = useDispatch()
+
+    const isVisible = useSelector(state => timeLogVisibilitySelector(state, timeLogId))
+    const selectedValueKey = useSelector(state => timeLogSelectedValueSelector(state, timeLogId))
+
+    const onVisibilityClick = useCallback(() => {
+        parseTimeLog(timeLogId)
+        dispatch(toggleTimeLogVisibility({timeLogId}))
+    }, [dispatch, timeLogId])
+
+    const onZoomToClick = useCallback(() => {
+        parseTimeLog(timeLogId)
+        const updatedTimeLogInfo = getTimeLogInfo(timeLogId)
+        dispatch(fitBounds([...updatedTimeLogInfo.bbox]))
+        dispatch(setTimeLogVisibility({timeLogId, visible: true}))
+    }, [dispatch, timeLogId])
+
+    const onValueChange = useCallback((event) => {
+        const parent = event.nativeEvent.path.find(elem => elem.dataset.entityid)
+        const timeLogId = parent?.dataset.entityid
+        dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
+    }, [dispatch])
+
+    let variableValuesInfo: DataLogValueInfo[] = []
+    let selectedValueInfo: DataLogValueInfo = null
+    if (isVisible) {
+        const timeLogInfo = getTimeLogInfo(timeLogId)
+        variableValuesInfo = timeLogInfo.valuesInfo.filter(
+            valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
+        )
+        selectedValueInfo = variableValuesInfo
+            .find(info => info.valueKey === selectedValueKey)
+    }
+
+
     return (<>
         <EntityTitle
             title={`TimeLog ${timeLogId}`}
             onVisibilityClick={onVisibilityClick}
             onZoomToClick={onZoomToClick}
-            entityId={timeLogId}
             isVisible={isVisible}
         />
-        {isVisible && valuesInfo.length > 0 && (
+        {isVisible && variableValuesInfo.length > 0 && (
             <div className={classes.entityInfoContainer}>
                 <Select
                     className={classes.timeLogValueSelect}
                     value={selectedValueInfo.valueKey}
-                    onChange={onTimeLogValueChange}
+                    onChange={onValueChange}
                 >
-                    {valuesInfo.map(valueInfo => (
+                    {variableValuesInfo.map(valueInfo => (
                         <MenuItem
                             className={classes.timeLogMenuItem}
                             key={valueInfo.valueKey}

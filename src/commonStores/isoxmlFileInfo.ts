@@ -60,6 +60,7 @@ export const getTimeLogGeoJSON = (timeLogId: string) => {
 
 export const getISOXMLManager = () => isoxmlManagerInfo?.isoxmlManager
 export const getTimeLogsCache = () => isoxmlManagerInfo?.timeLogsCache
+export const getTimeLogInfo = (timeLogId: string) => isoxmlManagerInfo?.timeLogsCache[timeLogId]
 
 export const clearISOXMLManagerData = () => {
     isoxmlManagerInfo = null

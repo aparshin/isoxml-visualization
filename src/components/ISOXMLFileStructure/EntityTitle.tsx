@@ -10,7 +10,6 @@ interface EntityTitleProps {
     onVisibilityClick: React.MouseEventHandler<HTMLButtonElement>
     onZoomToClick: React.MouseEventHandler<HTMLButtonElement>
     title: string
-    entityId: string
     isVisible: boolean
 }
 
@@ -24,12 +23,12 @@ const useStyles = makeStyles({
     }
 })
 
-export function EntityTitle ({onVisibilityClick, onZoomToClick, title, entityId, isVisible}: EntityTitleProps) {
+export function EntityTitle ({onVisibilityClick, onZoomToClick, title, isVisible}: EntityTitleProps) {
     const classes = useStyles()
     return (
         <div className={classes.gridTitleContainer}>
             <Tooltip title="Toggle visibility on map">
-                <IconButton data-entityid={entityId} size="small" onClick={onVisibilityClick}>
+                <IconButton  size="small" onClick={onVisibilityClick}>
                     <VisibilityIcon
                         color={isVisible ? 'primary' : 'disabled'}
                     />
@@ -37,7 +36,7 @@ export function EntityTitle ({onVisibilityClick, onZoomToClick, title, entityId,
             </Tooltip>
             <Typography display="inline" className={classes.gridTitle}>{title}</Typography>
             <Tooltip title="Zoom to entity">
-                <IconButton data-entityid={entityId} size="small" onClick={onZoomToClick}>
+                <IconButton  size="small" onClick={onZoomToClick}>
                     <ZoomInIcon color='primary' />
                 </IconButton>
             </Tooltip>

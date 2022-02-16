@@ -66,7 +66,13 @@ export const {
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
+export const gridVisibilitySelector = (state, gridId: string) => !!state.visualSettings.gridsVisibility[gridId]
+
 export const timeLogsVisibilitySelector = state => state.visualSettings.timeLogsVisibility
+export const timeLogVisibilitySelector = (state, timeLogId: string) => !!state.visualSettings.timeLogsVisibility[timeLogId]
+
 export const timeLogsSelectedValueSelector = state => state.visualSettings.timeLogsSelectedValue
+export const timeLogSelectedValueSelector =
+    (state, timeLogId: string) => state.visualSettings.timeLogsSelectedValue[timeLogId]
 
 export default visualSettingsSlice.reducer

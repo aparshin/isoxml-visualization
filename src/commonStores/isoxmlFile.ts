@@ -90,3 +90,5 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
 export const isoxmlFileGridsInfoSelector = (state: any): {[taskId: string]: GridInfo} =>
     state.isoxmlFile.gridsInfo
+export const isoxmlFileGridInfoSelector = (state: any, gridId: string): GridInfo =>
+    state.isoxmlFile.gridsInfo[gridId]
