@@ -41,7 +41,7 @@ export function ISOXMLFileStructure() {
             const taskId = isoxmlManager.getReferenceByEntity(task).xmlId
 
             const timeLogs = (task.attributes.TimeLog || [])
-                .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogInfo)
+                .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
 
             return (
                 <div key={taskId} className={classes.taskContainer}>

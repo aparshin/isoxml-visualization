@@ -20,7 +20,8 @@ export const visualSettingsSlice = createSlice({
     initialState: {
         gridsVisibility: {},
         timeLogsVisibility: {},
-        timeLogsSelectedValue: {}
+        timeLogsSelectedValue: {},
+        excludeOutliers: {}
     },
     reducers: {
         toggleGridVisibility: (state, action) => {
@@ -44,6 +45,10 @@ export const visualSettingsSlice = createSlice({
         setTimeLogValue: (state, action) => {
             const {timeLogId, valueKey} = action.payload
             state.timeLogsSelectedValue[timeLogId] = valueKey
+        },
+        setExcludeOutliers: (state, action) => {
+            const {timeLogId, exclude} = action.payload
+            state.excludeOutliers[timeLogId] = exclude
         }
     },
     extraReducers: builder => {
@@ -51,6 +56,7 @@ export const visualSettingsSlice = createSlice({
             state.gridsVisibility = {}
             state.timeLogsVisibility = {}
             state.timeLogsSelectedValue = {}
+            state.excludeOutliers = {}
         })
     }
 })
@@ -61,7 +67,8 @@ export const {
     setGridVisibility,
     toggleTimeLogVisibility,
     setTimeLogVisibility,
-    setTimeLogValue
+    setTimeLogValue,
+    setExcludeOutliers
 } = visualSettingsSlice.actions
 
 // selectors
@@ -74,5 +81,8 @@ export const timeLogVisibilitySelector = (state, timeLogId: string) => !!state.v
 export const timeLogsSelectedValueSelector = state => state.visualSettings.timeLogsSelectedValue
 export const timeLogSelectedValueSelector =
     (state, timeLogId: string) => state.visualSettings.timeLogsSelectedValue[timeLogId]
+
+export const timeLogsExcludeOutliersSelector = state => state.visualSettings.excludeOutliers
+export const timeLogExcludeOutliersSelector = (state, timeLogId: string) => !!state.visualSettings.excludeOutliers[timeLogId]
 
 export default visualSettingsSlice.reducer

@@ -7,24 +7,28 @@ interface ISOXMLManagerInfo {
     isoxmlManager: ISOXMLManager
     timeLogsCache: {[timeLogId: string]: TimeLogInfo}
     timeLogsGeoJSONs: {[timeLogId: string]: any}
+    timeLogsRangesWithoutOutliers: {[timeLogId: string]: {minValue: number, maxValue: number}[]}
 }
 
 let isoxmlManagerInfo: ISOXMLManagerInfo
 
+function findTimeLogById (timeLogId: string) {
+    for (const task of (isoxmlManagerInfo.isoxmlManager.rootElement.attributes.Task || [])) {
+        const timeLog = (task.attributes.TimeLog || [])
+            .find(timeLog => timeLog.attributes.Filename === timeLogId) as ExtendedTimeLog
+        if (timeLog) {
+            return timeLog
+        }
+    }
+    return null
+}
 
 export const parseTimeLog = (timeLogId: string) => {
     if (isoxmlManagerInfo.timeLogsCache?.[timeLogId]) {
         return 
     }
 
-    let timeLog: ExtendedTimeLog
-    for (const task of (isoxmlManagerInfo.isoxmlManager.rootElement.attributes.Task || [])) {
-        timeLog = (task.attributes.TimeLog || []).find(timeLog => timeLog.attributes.Filename === timeLogId) as ExtendedTimeLog
-        if (timeLog) {
-            break;
-        }
-    }
-
+    const timeLog = findTimeLogById(timeLogId)
     isoxmlManagerInfo.timeLogsCache[timeLogId] = timeLog.parseBinaryFile()
 }
 
@@ -62,6 +66,32 @@ export const getISOXMLManager = () => isoxmlManagerInfo?.isoxmlManager
 export const getTimeLogsCache = () => isoxmlManagerInfo?.timeLogsCache
 export const getTimeLogInfo = (timeLogId: string) => isoxmlManagerInfo?.timeLogsCache[timeLogId]
 
+export const getRangeWithoutOutliers = (timeLogId: string, valueKey: string) => {
+    const ranges = isoxmlManagerInfo.timeLogsRangesWithoutOutliers
+
+    if (!(timeLogId in ranges)) {
+        const timeLog = findTimeLogById(timeLogId)
+        ranges[timeLogId] = timeLog.rangesWithoutOutliyers()
+    }
+
+    const idx = isoxmlManagerInfo.timeLogsCache[timeLogId]?.valuesInfo.findIndex(info => info.valueKey === valueKey)
+    return ranges[timeLogId][idx]
+}
+
+export const getTimeLogValuesRange = (timeLogId: string, valueKey: string, excludeOutliers: boolean) => {
+    if (excludeOutliers) {
+        return getRangeWithoutOutliers(timeLogId, valueKey)
+    } else {
+        const timeLogInfo = getTimeLogInfo(timeLogId)
+        const valueInfo = timeLogInfo.valuesInfo.find(info => info.valueKey === valueKey)
+
+        return {
+            minValue: valueInfo.minValue,
+            maxValue: valueInfo.maxValue
+        }
+    }
+}
+
 export const clearISOXMLManagerData = () => {
     isoxmlManagerInfo = null
 }
@@ -70,6 +100,7 @@ export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager, timeLogsCache
     isoxmlManagerInfo = {
         isoxmlManager,
         timeLogsCache,
-        timeLogsGeoJSONs: {}
+        timeLogsGeoJSONs: {},
+        timeLogsRangesWithoutOutliers: {}
     }
 }

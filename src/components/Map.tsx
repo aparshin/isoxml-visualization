@@ -4,15 +4,22 @@ import { makeStyles } from '@material-ui/core/styles'
 import { WebMercatorViewport } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
 import { ExtendedGrid, Task } from 'isoxml'
-import { gridsVisibilitySelector, timeLogsSelectedValueSelector, timeLogsVisibilitySelector } from '../commonStores/visualSettings'
+import {
+    gridsVisibilitySelector,
+    timeLogsExcludeOutliersSelector,
+    timeLogsSelectedValueSelector,
+    timeLogsVisibilitySelector
+} from '../commonStores/visualSettings'
 import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
 import { formatValue, getGridValue, TIMELOG_COLOR_SCALE } from '../utils'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
-import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache } from '../commonStores/isoxmlFileInfo'
+import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache, getTimeLogValuesRange } from '../commonStores/isoxmlFileInfo'
 import chroma from 'chroma-js'
+
+const OUTLIER_COLOR: [number, number, number] = [255, 0, 255]
 
 const useStyles = makeStyles({
     tooltipBase: {
@@ -55,10 +62,11 @@ export function Map() {
     const timeLogsCache = getTimeLogsCache()
 
     const fitBounds = useSelector(fitBoundsSelector)
-    const visibleGrids = useSelector(gridsVisibilitySelector)
-    const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
-    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
+    const visibleGrids = useSelector(gridsVisibilitySelector)
+    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
+    const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
+    const timeLogsExcludeOutliers = useSelector(timeLogsExcludeOutliersSelector)
 
     const gridLayers = Object.keys(visibleGrids)
         .filter(taskId => visibleGrids[taskId])
@@ -72,10 +80,14 @@ export function Map() {
         .filter(key => visibleTimeLogs[key])
         .map(timeLogId => {
             const valueKey = timeLogsSelectedValue[timeLogId]
+            const excludeOutliers = timeLogsExcludeOutliers[timeLogId]
             const geoJSON = getTimeLogGeoJSON(timeLogId)
-            const valuesInfo = timeLogsCache[timeLogId].valuesInfo.find(info => info.valueKey === valueKey)
 
-            const palette = chroma.scale((TIMELOG_COLOR_SCALE.colors as any)()).domain([valuesInfo.minValue, valuesInfo.maxValue])
+            const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
+
+            const palette = chroma
+                .scale((TIMELOG_COLOR_SCALE.colors as any)())
+                .domain([minValue, maxValue])
 
             return new GeoJsonLayer({
                 id: timeLogId,
@@ -84,11 +96,15 @@ export function Map() {
                     features: geoJSON.features.filter(feature => valueKey in feature.properties)
                 },
                 getFillColor: (point: any) => {
-                    return palette(point.properties[valueKey] as number).rgb()
+                    const value = point.properties[valueKey] as number
+                    if (value > maxValue || value < minValue) {
+                        return OUTLIER_COLOR
+                    }
+                    return palette(value).rgb()
                 },
                 stroked: false,
                 updateTriggers: {
-                    getFillColor: [valueKey]
+                    getFillColor: [valueKey, excludeOutliers]
                 },
                 pointRadiusUnits: 'pixels',
                 getPointRadius: 5,

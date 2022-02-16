@@ -6,16 +6,20 @@ import { DataLogValueInfo } from "isoxml";
 import { backgroundGradientFromPalette, TIMELOG_COLOR_SCALE } from "../../utils";
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
-import { getTimeLogInfo, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
+import { getTimeLogInfo, getTimeLogValuesRange, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
 import { useDispatch, useSelector } from "react-redux";
 import {
+    setExcludeOutliers,
     setTimeLogValue,
     setTimeLogVisibility,
+    timeLogExcludeOutliersSelector,
     timeLogSelectedValueSelector,
     timeLogVisibilitySelector,
     toggleTimeLogVisibility
 } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
 
 const useStyles = makeStyles({
     timeLogPalette: {
@@ -37,6 +41,11 @@ const useStyles = makeStyles({
     timeLogMenuItemLine: {
         overflowX: 'hidden',
         textOverflow: 'ellipsis'
+    },
+    outlierLabel: {
+        '& *': {
+            fontSize: '0.9rem'
+        }
     }
 })
 
@@ -49,6 +58,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const dispatch = useDispatch()
 
     const isVisible = useSelector(state => timeLogVisibilitySelector(state, timeLogId))
+    const excludeOutliers = useSelector(state => timeLogExcludeOutliersSelector(state, timeLogId))
     const selectedValueKey = useSelector(state => timeLogSelectedValueSelector(state, timeLogId))
 
     const onVisibilityClick = useCallback(() => {
@@ -64,13 +74,17 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     }, [dispatch, timeLogId])
 
     const onValueChange = useCallback((event) => {
-        const parent = event.nativeEvent.path.find(elem => elem.dataset.entityid)
-        const timeLogId = parent?.dataset.entityid
         dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
-    }, [dispatch])
+    }, [dispatch, timeLogId])
+
+    const onExcludeOutlier = useCallback(event => {
+        dispatch(setExcludeOutliers({timeLogId, exclude: event.target.checked}))
+    }, [dispatch, timeLogId])
 
     let variableValuesInfo: DataLogValueInfo[] = []
     let selectedValueInfo: DataLogValueInfo = null
+    let min: number
+    let max: number
     if (isVisible) {
         const timeLogInfo = getTimeLogInfo(timeLogId)
         variableValuesInfo = timeLogInfo.valuesInfo.filter(
@@ -78,8 +92,11 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         )
         selectedValueInfo = variableValuesInfo
             .find(info => info.valueKey === selectedValueKey)
-    }
 
+        const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
+        min = minValue
+        max = maxValue
+    }
 
     return (<>
         <EntityTitle
@@ -100,7 +117,6 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                             className={classes.timeLogMenuItem}
                             key={valueInfo.valueKey}
                             value={valueInfo.valueKey}
-                            data-entityid={timeLogId}
                         >
                             <div className={classes.timeLogMenuItemLine}>{
                                 valueInfo.DDEntityName
@@ -115,9 +131,19 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                 </Select>
                 <ValueDataPalette
                     valueInfo={selectedValueInfo}
-                    min={selectedValueInfo.minValue}
-                    max={selectedValueInfo.maxValue}
+                    min={min}
+                    max={max}
                     paletteClassName={classes.timeLogPalette}
+                />
+                <FormControlLabel
+                    className={classes.outlierLabel}
+                    control={ <Checkbox
+                        checked={excludeOutliers}
+                        onChange={onExcludeOutlier}
+                        color="primary"
+                        size="small"
+                    /> }
+                    label="Exclude outliers"
                 />
             </div>
         )}
