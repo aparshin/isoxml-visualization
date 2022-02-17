@@ -20,27 +20,23 @@ export const visualSettingsSlice = createSlice({
     initialState: {
         gridsVisibility: {},
         timeLogsVisibility: {},
+        partfieldsVisibility: {},
         timeLogsSelectedValue: {},
         excludeOutliers: {}
     },
     reducers: {
-        toggleGridVisibility: (state, action) => {
-            const id = action.payload.gridId
-            state.gridsVisibility[id] = !state.gridsVisibility[id]
-        },
         setGridVisibility: (state, action) => {
             const {gridId, visible} = action.payload
             state.gridsVisibility[gridId] = visible
-        },
-        toggleTimeLogVisibility: (state, action) => {
-            const id = action.payload.timeLogId
-            state.timeLogsVisibility[id] = !state.timeLogsVisibility[id]
-            setDefaultTimeLogValue(state, id)
         },
         setTimeLogVisibility: (state, action) => {
             const {timeLogId, visible} = action.payload
             state.timeLogsVisibility[timeLogId] = visible
             setDefaultTimeLogValue(state, timeLogId)
+        },
+        setPartfieldVisibility: (state, action) => {
+            const {partfieldId, visible} = action.payload
+            state.partfieldsVisibility[partfieldId] = visible
         },
         setTimeLogValue: (state, action) => {
             const {timeLogId, valueKey} = action.payload
@@ -57,32 +53,39 @@ export const visualSettingsSlice = createSlice({
             state.timeLogsVisibility = {}
             state.timeLogsSelectedValue = {}
             state.excludeOutliers = {}
+            state.partfieldsVisibility = {}
         })
     }
 })
 
 // actions
 export const {
-    toggleGridVisibility,
     setGridVisibility,
-    toggleTimeLogVisibility,
     setTimeLogVisibility,
+    setPartfieldVisibility,
     setTimeLogValue,
     setExcludeOutliers
 } = visualSettingsSlice.actions
 
 // selectors
 export const gridsVisibilitySelector = state => state.visualSettings.gridsVisibility
-export const gridVisibilitySelector = (state, gridId: string) => !!state.visualSettings.gridsVisibility[gridId]
+export const gridVisibilitySelector =
+    (state, gridId: string) => !!state.visualSettings.gridsVisibility[gridId]
 
 export const timeLogsVisibilitySelector = state => state.visualSettings.timeLogsVisibility
-export const timeLogVisibilitySelector = (state, timeLogId: string) => !!state.visualSettings.timeLogsVisibility[timeLogId]
+export const timeLogVisibilitySelector =
+    (state, timeLogId: string) => !!state.visualSettings.timeLogsVisibility[timeLogId]
+
+export const partfieldsVisibilitySelector = state => state.visualSettings.partfieldsVisibility
+export const partfieldVisibilitySelector =
+    (state, partfieldId: string) => !!state.visualSettings.partfieldsVisibility[partfieldId]
 
 export const timeLogsSelectedValueSelector = state => state.visualSettings.timeLogsSelectedValue
 export const timeLogSelectedValueSelector =
     (state, timeLogId: string) => state.visualSettings.timeLogsSelectedValue[timeLogId]
 
 export const timeLogsExcludeOutliersSelector = state => state.visualSettings.excludeOutliers
-export const timeLogExcludeOutliersSelector = (state, timeLogId: string) => !!state.visualSettings.excludeOutliers[timeLogId]
+export const timeLogExcludeOutliersSelector =
+    (state, timeLogId: string) => !!state.visualSettings.excludeOutliers[timeLogId]
 
 export default visualSettingsSlice.reducer

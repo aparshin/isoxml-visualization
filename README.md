@@ -5,6 +5,7 @@ This is a pure browser application for rendering ISOXML ([ISO11783-10](https://w
 Main features:
   * Grids. Only Grids Type 2 (ProcessDataVariable values) are supported.
   * Time Logs. The user can choose DataLogValues to render on the map.
-  * The user can click on the map to see the exact value of the clicked entity (Grid cell or TimeLog item)
+  * Task fields.
+  * The user can click on the map to see the exact value of the clicked entity (Grid cell or TimeLog item).
 
 [Try it out: Demo!](https://d3emrh4jlarcc4.cloudfront.net/index.html)

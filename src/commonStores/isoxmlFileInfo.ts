@@ -1,4 +1,4 @@
-import { ExtendedTimeLog, ISOXMLManager, TimeLogInfo } from "isoxml"
+import { ExtendedPartfield, ExtendedTimeLog, ISOXMLManager, TimeLogInfo } from "isoxml"
 
 // The reason to keet it out of the store is to avoid non-serializable and too big data in the store
 // No parts of this app should modify data in this ISOXMLManager
@@ -7,7 +7,8 @@ interface ISOXMLManagerInfo {
     isoxmlManager: ISOXMLManager
     timeLogsCache: {[timeLogId: string]: TimeLogInfo}
     timeLogsGeoJSONs: {[timeLogId: string]: any}
-    timeLogsRangesWithoutOutliers: {[timeLogId: string]: {minValue: number, maxValue: number}[]}
+    timeLogsRangesWithoutOutliers: {[timeLogId: string]: {minValue: number, maxValue: number}[]},
+    partfieldGeoJSONs: {[partfieldId: string]: any}
 }
 
 let isoxmlManagerInfo: ISOXMLManagerInfo
@@ -62,6 +63,19 @@ export const getTimeLogGeoJSON = (timeLogId: string) => {
     return geoJSON
 }
 
+export const getPartfieldGeoJSON = (partfieldId: string) => {
+    if (!isoxmlManagerInfo) {
+        return null
+    }
+
+    if (!isoxmlManagerInfo?.partfieldGeoJSONs[partfieldId]) {
+        const partfield = isoxmlManagerInfo.isoxmlManager.getEntityByXmlId<ExtendedPartfield>(partfieldId)
+        isoxmlManagerInfo.partfieldGeoJSONs[partfieldId] = partfield.toGeoJSON()
+    }
+
+    return isoxmlManagerInfo.partfieldGeoJSONs[partfieldId]
+}
+
 export const getISOXMLManager = () => isoxmlManagerInfo?.isoxmlManager
 export const getTimeLogsCache = () => isoxmlManagerInfo?.timeLogsCache
 export const getTimeLogInfo = (timeLogId: string) => isoxmlManagerInfo?.timeLogsCache[timeLogId]
@@ -101,6 +115,7 @@ export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager, timeLogsCache
         isoxmlManager,
         timeLogsCache,
         timeLogsGeoJSONs: {},
-        timeLogsRangesWithoutOutliers: {}
+        timeLogsRangesWithoutOutliers: {},
+        partfieldGeoJSONs: {}
     }
 }

@@ -6,6 +6,7 @@ import DeckGL from '@deck.gl/react'
 import { ExtendedGrid, Task } from 'isoxml'
 import {
     gridsVisibilitySelector,
+    partfieldsVisibilitySelector,
     timeLogsExcludeOutliersSelector,
     timeLogsSelectedValueSelector,
     timeLogsVisibilitySelector
@@ -13,13 +14,12 @@ import {
 import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
-import { formatValue, getGridValue, TIMELOG_COLOR_SCALE } from '../utils'
+import { formatValue, getGridValue } from '../utils'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
-import { getISOXMLManager, getTimeLogGeoJSON, getTimeLogsCache, getTimeLogValuesRange } from '../commonStores/isoxmlFileInfo'
-import chroma from 'chroma-js'
-
-const OUTLIER_COLOR: [number, number, number] = [255, 0, 255]
+import { getISOXMLManager, getPartfieldGeoJSON, getTimeLogGeoJSON, getTimeLogsCache, getTimeLogValuesRange } from '../commonStores/isoxmlFileInfo'
+import TimeLogLayer from '../mapLayers/TimeLogLayer'
+import PartfieldLayer from '../mapLayers/PartfieldLayer'
 
 const useStyles = makeStyles({
     tooltipBase: {
@@ -64,9 +64,19 @@ export function Map() {
     const fitBounds = useSelector(fitBoundsSelector)
     const gridsInfo = useSelector(isoxmlFileGridsInfoSelector)
     const visibleGrids = useSelector(gridsVisibilitySelector)
-    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
+
     const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
+    const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
     const timeLogsExcludeOutliers = useSelector(timeLogsExcludeOutliersSelector)
+
+    const visiblePartfields = useSelector(partfieldsVisibilitySelector)
+
+    const partfieldLayers = Object.keys(visiblePartfields)
+        .filter(key => visiblePartfields[key])
+        .map(partfieldId => {
+            const geoJSON = getPartfieldGeoJSON(partfieldId)
+            return new PartfieldLayer(partfieldId, geoJSON)
+        })
 
     const gridLayers = Object.keys(visibleGrids)
         .filter(taskId => visibleGrids[taskId])
@@ -83,33 +93,9 @@ export function Map() {
             const excludeOutliers = timeLogsExcludeOutliers[timeLogId]
             const geoJSON = getTimeLogGeoJSON(timeLogId)
 
-            const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
+            const { minValue, maxValue } = getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
 
-            const palette = chroma
-                .scale((TIMELOG_COLOR_SCALE.colors as any)())
-                .domain([minValue, maxValue])
-
-            return new GeoJsonLayer({
-                id: timeLogId,
-                data: {
-                    ...geoJSON,
-                    features: geoJSON.features.filter(feature => valueKey in feature.properties)
-                },
-                getFillColor: (point: any) => {
-                    const value = point.properties[valueKey] as number
-                    if (value > maxValue || value < minValue) {
-                        return OUTLIER_COLOR
-                    }
-                    return palette(value).rgb()
-                },
-                stroked: false,
-                updateTriggers: {
-                    getFillColor: [valueKey, excludeOutliers]
-                },
-                pointRadiusUnits: 'pixels',
-                getPointRadius: 5,
-                pickable: true
-            })
+            return new TimeLogLayer(timeLogId, geoJSON, valueKey, minValue, maxValue)
         })
     
     const viewStateRef = useRef(null)
@@ -204,7 +190,7 @@ export function Map() {
         <DeckGL
             initialViewState={initialViewState}
             controller={true}
-            layers={[OSMBasemap, ...gridLayers, ...timeLogLayers]}
+            layers={[OSMBasemap, ...gridLayers, ...partfieldLayers, ...timeLogLayers]}
             onViewStateChange={onViewStateChange}
             onClick={onMapClick}
         >

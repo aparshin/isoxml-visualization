@@ -1,10 +1,11 @@
 import React from 'react'
 import { makeStyles } from '@material-ui/core/styles'
 import { Typography } from '@material-ui/core'
-import { ExtendedTimeLog } from 'isoxml'
+import { ExtendedPartfield, ExtendedTimeLog } from 'isoxml'
 import { getISOXMLManager } from '../../commonStores/isoxmlFileInfo'
 import { GridEntity } from './GridEntity'
 import { TimeLogEntity } from './TimeLogEntity'
+import { PartfieldEntity } from './PartfieldEntity'
 
 const useStyles = makeStyles({
     noTasksMessage: {
@@ -39,6 +40,9 @@ export function ISOXMLFileStructure() {
         {tasks.map(task => {
             const grid = task.attributes.Grid?.[0]
             const taskId = isoxmlManager.getReferenceByEntity(task).xmlId
+            const partfieldId = task.attributes.PartfieldIdRef?.xmlId
+            const partfield = task.attributes.PartfieldIdRef?.entity as ExtendedPartfield
+            const isPartfieldWithGeom = partfield?.attributes.PolygonnonTreatmentZoneonly?.length > 0
 
             const timeLogs = (task.attributes.TimeLog || [])
                 .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
@@ -48,6 +52,14 @@ export function ISOXMLFileStructure() {
                     <Typography className={classes.taskTitle}>
                         {task.attributes.TaskDesignator || taskId}
                     </Typography>
+                    {isPartfieldWithGeom && (
+                        <div className={classes.entityContainer}>
+                            <PartfieldEntity
+                                partfield={partfield}
+                                partfieldId={partfieldId}
+                            />
+                        </div>
+                    )}
                     {grid && (
                         <div className={classes.entityContainer}>
                             <GridEntity

@@ -1,25 +1,26 @@
 import React, { useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
 import { makeStyles } from '@material-ui/core/styles'
 import { DataLogValueInfo } from "isoxml";
+
 import { backgroundGradientFromPalette, TIMELOG_COLOR_SCALE } from "../../utils";
-import { EntityTitle } from "./EntityTitle";
-import { ValueDataPalette } from "./ValueDataPalette";
 import { getTimeLogInfo, getTimeLogValuesRange, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
-import { useDispatch, useSelector } from "react-redux";
 import {
     setExcludeOutliers,
     setTimeLogValue,
     setTimeLogVisibility,
     timeLogExcludeOutliersSelector,
     timeLogSelectedValueSelector,
-    timeLogVisibilitySelector,
-    toggleTimeLogVisibility
+    timeLogVisibilitySelector
 } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Checkbox from "@material-ui/core/Checkbox";
+
+import { EntityTitle } from "./EntityTitle";
+import { ValueDataPalette } from "./ValueDataPalette";
 
 const useStyles = makeStyles({
     timeLogPalette: {
@@ -63,8 +64,8 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
 
     const onVisibilityClick = useCallback(() => {
         parseTimeLog(timeLogId)
-        dispatch(toggleTimeLogVisibility({timeLogId}))
-    }, [dispatch, timeLogId])
+        dispatch(setTimeLogVisibility({timeLogId, visible: !isVisible}))
+    }, [dispatch, timeLogId, isVisible])
 
     const onZoomToClick = useCallback(() => {
         parseTimeLog(timeLogId)
