@@ -1,3 +1,7 @@
+# About
+
+Original by [Alexander Parshin](https://github.com/aparshin/isoxml-visualization) using [ISOXML.js](https://github.com/dev4Agriculture/isoxml-js)
+
 ### A web application to visualize ISOXML (ISO11783-10) files
 
 This is a pure browser application for rendering ISOXML ([ISO11783-10](https://www.iso.org/standard/61581.html)) TaskSets. It uses [Deck.gl](https://deck.gl/) visualization library for rendering on the map. ISOXML parsing is done using [ISOXML.js](https://github.com/dev4Agriculture/isoxml-js) library. **The opened ISOXML files never leave the browser. All the parsing and visualization happens at client-side!**
