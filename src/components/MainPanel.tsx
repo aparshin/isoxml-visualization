@@ -103,7 +103,7 @@ export function MainPanel() {
                         size="small"
                         startIcon={<GithubIcon />}
                         className={classes.githubLink}
-                    >Project on GitHub</Button>
+                    >Project by Alex Parshin on GitHub</Button>
                 </div>
             )}
             {fileState === ISOXMLFileState.LOADING && (
