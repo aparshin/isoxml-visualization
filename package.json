@@ -1,6 +1,6 @@
 {
   "name": "isoxml-visualization",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "dependencies": {
     "@danmarshall/deckgl-typings": "^4.9.13",
