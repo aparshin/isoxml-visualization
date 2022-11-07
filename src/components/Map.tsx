@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { makeStyles } from '@material-ui/core/styles'
+import Box from '@mui/material/Box'
 import { WebMercatorViewport } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
+import {GeoJsonLayer } from '@deck.gl/layers'
 import { ExtendedGrid, Task } from 'isoxml'
 import {
     gridsVisibilitySelector,
@@ -15,30 +16,10 @@ import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
 import { formatValue, getGridValue } from '../utils'
-import {GeoJsonLayer } from '@deck.gl/layers'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
 import { getISOXMLManager, getPartfieldGeoJSON, getTimeLogGeoJSON, getTimeLogsCache, getTimeLogValuesRange } from '../commonStores/isoxmlFileInfo'
 import TimeLogLayer from '../mapLayers/TimeLogLayer'
 import PartfieldLayer from '../mapLayers/PartfieldLayer'
-
-const useStyles = makeStyles({
-    tooltipBase: {
-        backgroundColor: 'blue',
-        position: 'absolute',
-        width: 4,
-        height: 4,
-        borderRadius: 3,
-        transform: 'translate(-50%, -50%)',
-    },
-    tooltip: {
-        backgroundColor: 'white',
-        border: '1px solid gray',
-        position: 'absolute',
-        transform: 'translate(-50%, -120%)',
-        padding: 4,
-        borderRadius: 4
-    }
-})
 
 interface TooltipState {
     x: number, 
@@ -174,8 +155,6 @@ export function Map() {
         }
     }, [fitBounds])
 
-    const classes = useStyles()
-
     let isTooltipVisible = false
     if (tooltip) {
         if (tooltip.layerType === 'grid') {
@@ -196,10 +175,30 @@ export function Map() {
         >
             <OSMCopyright />
             {isTooltipVisible && (<>
-                <div className={classes.tooltipBase} style={{left: tooltip.x, top: tooltip.y}}/>
-                <div className={classes.tooltip} style={{left: tooltip.x, top: tooltip.y}}>
+                <Box
+                    sx={{
+                        backgroundColor: 'blue',
+                        position: 'absolute',
+                        width: 4,
+                        height: 4,
+                        borderRadius: 3,
+                        transform: 'translate(-50%, -50%)',
+                    }}
+                    style={{left: tooltip.x, top: tooltip.y}}
+                />
+                <Box
+                    sx={{
+                        backgroundColor: 'white',
+                        border: '1px solid gray',
+                        position: 'absolute',
+                        transform: 'translate(-50%, -120%)',
+                        padding: 4,
+                        borderRadius: 4
+                    }}
+                    style={{left: tooltip.x, top: tooltip.y}}
+                >
                     {tooltip.value}
-                </div>
+                </Box>
             </>)}
         </DeckGL>
     </>)

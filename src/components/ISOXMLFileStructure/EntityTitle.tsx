@@ -1,10 +1,10 @@
 import React from "react"
-import { makeStyles } from '@material-ui/core/styles'
-import IconButton from "@material-ui/core/IconButton"
-import Tooltip from "@material-ui/core/Tooltip"
-import Typography from "@material-ui/core/Typography"
-import VisibilityIcon from '@material-ui/icons/Visibility'
-import ZoomInIcon from '@material-ui/icons/ZoomIn'
+import Box from "@mui/material/Box"
+import IconButton from "@mui/material/IconButton"
+import Tooltip from "@mui/material/Tooltip"
+import Typography from "@mui/material/Typography"
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
 
 interface EntityTitleProps {
     onVisibilityClick: React.MouseEventHandler<HTMLButtonElement>
@@ -13,33 +13,22 @@ interface EntityTitleProps {
     isVisible: boolean
 }
 
-const useStyles = makeStyles({
-    gridTitleContainer: {
-        display: 'flex',
-        alignItems: 'center'
-    },
-    gridTitle: {
-        flexGrow: 1
-    }
-})
-
 export function EntityTitle ({onVisibilityClick, onZoomToClick, title, isVisible}: EntityTitleProps) {
-    const classes = useStyles()
     return (
-        <div className={classes.gridTitleContainer}>
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
             <Tooltip title="Toggle visibility on map">
-                <IconButton  size="small" onClick={onVisibilityClick}>
+                <IconButton sx={{p: 0.25}} size="small" onClick={onVisibilityClick}>
                     <VisibilityIcon
                         color={isVisible ? 'primary' : 'disabled'}
                     />
                 </IconButton>
             </Tooltip>
-            <Typography display="inline" className={classes.gridTitle}>{title}</Typography>
+            <Typography display="inline" sx={{flexGrow: 1}}>{title}</Typography>
             <Tooltip title="Zoom to entity">
-                <IconButton  size="small" onClick={onZoomToClick}>
+                <IconButton sx={{p: 0.25}} size="small" onClick={onZoomToClick}>
                     <ZoomInIcon color='primary' />
                 </IconButton>
             </Tooltip>
-        </div>
+        </Box>
     )
 }

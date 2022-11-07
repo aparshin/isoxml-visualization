@@ -1,10 +1,11 @@
 import React, { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import MenuItem from "@material-ui/core/MenuItem";
-import Select from "@material-ui/core/Select";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Checkbox from "@material-ui/core/Checkbox";
-import { makeStyles } from '@material-ui/core/styles'
+import Box from "@mui/material/Box";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import FormControl from "@mui/material/FormControl";
 import { DataLogValueInfo } from "isoxml";
 
 import { backgroundGradientFromPalette, TIMELOG_COLOR_SCALE } from "../../utils";
@@ -18,45 +19,19 @@ import {
     timeLogVisibilitySelector
 } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
+import { AppDispatch } from "../../store";
 
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
 
-const useStyles = makeStyles({
-    timeLogPalette: {
-        height: 16,
-        background: backgroundGradientFromPalette(TIMELOG_COLOR_SCALE)
-    },
-    timeLogValueSelect: {
-        width: '100%',
-        fontSize: '0.9rem',
-        fontStyle: 'italic'
-    },
-    entityInfoContainer: {
-        paddingBottom: 16
-    },
-    timeLogMenuItem: {
-        flexDirection: 'column',
-        alignItems: 'start'
-    },
-    timeLogMenuItemLine: {
-        overflowX: 'hidden',
-        textOverflow: 'ellipsis'
-    },
-    outlierLabel: {
-        '& *': {
-            fontSize: '0.9rem'
-        }
-    }
-})
+const TIMELOG_BACKGROUND = backgroundGradientFromPalette(TIMELOG_COLOR_SCALE)
 
 interface TimeLogEntityProps {
     timeLogId: string
 }
 
 export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
-    const classes = useStyles()
-    const dispatch = useDispatch()
+    const dispatch: AppDispatch = useDispatch()
 
     const isVisible = useSelector(state => timeLogVisibilitySelector(state, timeLogId))
     const excludeOutliers = useSelector(state => timeLogExcludeOutliersSelector(state, timeLogId))
@@ -107,37 +82,40 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
             isVisible={isVisible}
         />
         {isVisible && variableValuesInfo.length > 0 && (
-            <div className={classes.entityInfoContainer}>
-                <Select
-                    className={classes.timeLogValueSelect}
-                    value={selectedValueInfo.valueKey}
-                    onChange={onValueChange}
-                >
-                    {variableValuesInfo.map(valueInfo => (
-                        <MenuItem
-                            className={classes.timeLogMenuItem}
-                            key={valueInfo.valueKey}
-                            value={valueInfo.valueKey}
-                        >
-                            <div className={classes.timeLogMenuItemLine}>{
-                                valueInfo.DDEntityName
-                                    ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
-                                    : `DDI ${valueInfo.DDIString}`
-                            }</div>
-                            <div className={classes.timeLogMenuItemLine}>
-                                {valueInfo.deviceElementDesignator || `Device ${valueInfo.deviceElementId}`}
-                            </div>
-                        </MenuItem>
-                    ))}
-                </Select>
+            <Box sx={{pb: 4}}>
+                <FormControl size='small' variant='standard' sx={{width: '100%'}}>
+                    <Select
+                        sx={{ width: '100%', fontSize: '0.9rem', fontStyle: 'italic' }}
+                        value={selectedValueInfo.valueKey}
+                        onChange={onValueChange}
+                    >
+                        {variableValuesInfo.map(valueInfo => (
+                            <MenuItem
+                                sx={{ flexDirection: 'column', alignItems: 'start' }}
+                                key={valueInfo.valueKey}
+                                value={valueInfo.valueKey}
+                            >
+                                <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>{
+                                    valueInfo.DDEntityName
+                                        ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
+                                        : `DDI ${valueInfo.DDIString}`
+                                }</Box>
+                                <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {valueInfo.deviceElementDesignator || `Device ${valueInfo.deviceElementId}`}
+                                </Box>
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
                 <ValueDataPalette
                     valueInfo={selectedValueInfo}
                     min={min}
                     max={max}
-                    paletteClassName={classes.timeLogPalette}
+                    paletteSx={{ height: '16px', background: TIMELOG_BACKGROUND }}
                 />
                 <FormControlLabel
-                    className={classes.outlierLabel}
+                    sx={{fontSize: '0.9rem'}}
+                    componentsProps={{typography: {variant: 'body2'}}}
                     control={ <Checkbox
                         checked={excludeOutliers}
                         onChange={onExcludeOutlier}
@@ -146,7 +124,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                     /> }
                     label="Exclude outliers"
                 />
-            </div>
+            </Box>
         )}
     </>)
 }

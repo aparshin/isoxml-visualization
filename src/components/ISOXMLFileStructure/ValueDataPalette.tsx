@@ -1,36 +1,23 @@
 import React from "react"
-import { makeStyles } from '@material-ui/core/styles'
-import Typography from "@material-ui/core/Typography"
+import Typography from "@mui/material/Typography"
 import { ValueInformation } from "isoxml"
 import { formatValue } from "../../utils"
-
-const useStyles = makeStyles({
-    gridRangeContainer: {
-        display: 'flex'
-    },
-    gridRangeMin: {
-        flexGrow: 1,
-        fontSize: '0.9rem'
-    },
-    gridRangeMax: {
-        fontSize: '0.9rem'
-    }
-})
+import { SxProps } from "@mui/system"
+import Box from "@mui/material/Box"
 
 interface ValueDataPaletteProps {
     valueInfo: ValueInformation
     min: number
     max: number
-    paletteClassName: string
+    paletteSx: SxProps
 }
 
-export function ValueDataPalette({valueInfo, min, max, paletteClassName}: ValueDataPaletteProps) {
-    const classes = useStyles()
+export function ValueDataPalette({valueInfo, min, max, paletteSx}: ValueDataPaletteProps) {
     return (<>
-        <div className={paletteClassName}></div>
-        <div className={classes.gridRangeContainer}>
-            <Typography className={classes.gridRangeMin}>{formatValue(min, valueInfo)}</Typography>
-            <Typography className={classes.gridRangeMax}>{formatValue(max, valueInfo)}</Typography>
-        </div>
+        <Box sx={paletteSx}></Box>
+        <Box sx={{display: 'flex', fontSize: '0.9rem'}}>
+            <Typography variant='body2' sx={{flexGrow: 1}}>{formatValue(min, valueInfo)}</Typography>
+            <Typography variant='body2'>{formatValue(max, valueInfo)}</Typography>
+        </Box>
     </>)
 }

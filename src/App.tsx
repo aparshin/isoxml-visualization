@@ -1,24 +1,14 @@
 import React from 'react'
-import { makeStyles } from '@material-ui/core/styles';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { MainPanel } from './components/MainPanel';
 import { Map } from './components/Map';
+import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
 
-const useStyles = makeStyles({
-    App: {
-        width: '100%',
-        height: '100%',
-        display: 'flex'
-    },
-    AppPanelContainer: {
-        width: '300px',
-        borderRight: '1px solid gray'
-    },
-    AppMapContainer: {
-        flexGrow: 1,
-        position: 'relative',
-        margin: '1px'
-    },
-    '@global': {
+const theme = createTheme({
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
         html: {
             height: '100%'
         },
@@ -29,20 +19,27 @@ const useStyles = makeStyles({
         '#root': {
             height: '100%'
         }
+      }
     }
+  }
 })
 
 function App() {
-    const classes = useStyles()
     return (
-        <div className={classes.App}>
-            <div className={classes.AppPanelContainer}>
-                <MainPanel />
-            </div>
-            <div className={classes.AppMapContainer}>
-                <Map />
-            </div>
-        </div>
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <Box sx={{ width: '100%', height: '100%', display: 'flex' }}>
+                <Box sx={{
+                    width: '300px',
+                    borderRight: '1px solid gray'
+                }}>
+                    <MainPanel />
+                </Box>
+                <Box sx={{ flexGrow: 1, position: 'relative', margin: '1px' }}>
+                    <Map />
+                </Box>
+            </Box>
+        </ThemeProvider>
     )
 }
 
