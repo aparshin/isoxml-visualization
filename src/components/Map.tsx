@@ -64,7 +64,12 @@ export function Map() {
         .map(taskId => {
             const task = isoxmlManager.getEntityByXmlId<Task>(taskId)
 
-            return new ISOXMLGridLayer(taskId, task.attributes.Grid[0] as ExtendedGrid, gridsInfo[taskId])
+            return new ISOXMLGridLayer(
+                taskId,
+                task.attributes.Grid[0] as ExtendedGrid,
+                task.attributes.TreatmentZone,
+                gridsInfo[taskId]
+            )
         })
 
     const timeLogLayers = Object.keys(visibleTimeLogs)

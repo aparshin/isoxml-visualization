@@ -36,11 +36,11 @@ export const isoxmlFileSlice = createSlice({
             state.state = ISOXMLFileState.LOADED
             state.gridsInfo = {}
             ;(isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
-                const grid = task.attributes.Grid?.[0]
+                const grid = task.attributes.Grid?.[0] as ExtendedGrid
                 const taskXmlId = isoxmlManager.getReferenceByEntity(task).xmlId
                 if (grid) {
-                    const gridRange = calculateGridValuesRange(grid as ExtendedGrid)
                     const gridValuesDescription = (task as ExtendedTask).getGridValuesDescription()
+                    const gridRange = calculateGridValuesRange(grid, task.attributes.TreatmentZone || [])
                     state.gridsInfo[taskXmlId] = {
                         ...gridRange,
                         ...gridValuesDescription[0]
@@ -65,6 +65,7 @@ export default isoxmlFileSlice.reducer
 // Async actions
 export const loadFile = (file: File) => async (dispatch: any) => {
     const isoxmlManager = new ISOXMLManager()
+
     const reader = new FileReader()
     dispatch(startLoading())
 
@@ -75,6 +76,7 @@ export const loadFile = (file: File) => async (dispatch: any) => {
             setISOXMLManagerData(isoxmlManager, {})
             dispatch(loadingDone())
         } catch(e) {
+            console.log('error', e)
             dispatch(loadingError())
         }
     }

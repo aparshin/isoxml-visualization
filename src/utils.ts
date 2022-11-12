@@ -1,6 +1,6 @@
 import { ExtentsLeftBottomRightTop } from "@deck.gl/core/utils/positions";
 import chroma from "chroma-js";
-import { ExtendedGrid, Grid, ValueInformation } from "isoxml";
+import { ExtendedGrid, ExtendedTreatmentZone, Grid, GridGridTypeEnum, ValueInformation } from "isoxml";
 
 export function gridBounds(grid: Grid): ExtentsLeftBottomRightTop {
     const {
@@ -20,20 +20,42 @@ export function gridBounds(grid: Grid): ExtentsLeftBottomRightTop {
     ]
 }
 
-export function calculateGridValuesRange (grid: ExtendedGrid): {min: number, max: number} {
-    const nCols = grid.attributes.GridMaximumColumn
-    const nRows = grid.attributes.GridMaximumRow
-    const cells = new Int32Array(grid.binaryData.buffer)
+export function calculateGridValuesRange (
+    grid: ExtendedGrid,
+    treatmentZones: ExtendedTreatmentZone[]
+): {min: number, max: number} {
+
     let min = +Infinity
     let max = -Infinity
 
-    for (let idx = 0; idx < nRows * nCols; idx++) {
-        const v = cells[idx]
-        if (v) {
-            min = Math.min(min, cells[idx])
-            max = Math.max(max, cells[idx])
+    if (grid.attributes.GridType === GridGridTypeEnum.GridType1) {
+        const zoneCodes = grid.getAllReferencedTZNCodes()
+
+        zoneCodes.forEach(zoneCode => {
+            const zone = treatmentZones.find(z => z.attributes.TreatmentZoneCode === zoneCode)
+            const pdv = zone?.attributes.ProcessDataVariable?.[0]
+
+            if (pdv) {
+                const value = pdv.attributes.ProcessDataValue
+
+                min = Math.min(min, value)
+                max = Math.max(max, value)
+            }
+        })
+    } else {
+        const nCols = grid.attributes.GridMaximumColumn
+        const nRows = grid.attributes.GridMaximumRow
+        const cells = new Int32Array(grid.binaryData.buffer)
+
+        for (let idx = 0; idx < nRows * nCols; idx++) {
+            const v = cells[idx]
+            if (v) {
+                min = Math.min(min, cells[idx])
+                max = Math.max(max, cells[idx])
+            }
         }
     }
+
     return {min, max}
 }
 

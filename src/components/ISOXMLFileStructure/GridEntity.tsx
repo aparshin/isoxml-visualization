@@ -50,7 +50,7 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
                     valueInfo={gridInfo}
                     min={gridInfo.min}
                     max={gridInfo.max}
-                    paletteSx={{height: 4, background: BACKGROUND_GRADIENT}}
+                    paletteSx={{height: '16px', background: BACKGROUND_GRADIENT}}
                 />
             </Box>
         )}
