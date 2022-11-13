@@ -2,7 +2,7 @@ import { ExtendedPartfield } from "isoxml";
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { AppDispatch } from "../../store";
+import { AppDispatch, RootState } from "../../store";
 import { getPartfieldGeoJSON } from "../../commonStores/isoxmlFileInfo";
 import { fitBounds } from "../../commonStores/map";
 import { partfieldVisibilitySelector, setPartfieldVisibility } from "../../commonStores/visualSettings";
@@ -16,7 +16,7 @@ interface PartfieldEntityProps {
 export function PartfieldEntity({partfield, partfieldId}: PartfieldEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
-    const isVisible = useSelector(state => partfieldVisibilitySelector(state, partfieldId))
+    const isVisible = useSelector((state: RootState) => partfieldVisibilitySelector(state, partfieldId))
 
     const onVisibilityClick = useCallback(() => {
         dispatch(setPartfieldVisibility({partfieldId, visible: !isVisible}))

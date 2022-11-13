@@ -8,7 +8,7 @@ import { isoxmlFileGridInfoSelector } from "../../commonStores/isoxmlFile";
 import { backgroundGradientFromPalette, gridBounds, GRID_COLOR_SCALE } from "../../utils";
 import { gridVisibilitySelector, setGridVisibility } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
-import { AppDispatch } from "../../store";
+import { AppDispatch, RootState } from "../../store";
 
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
@@ -23,8 +23,8 @@ const BACKGROUND_GRADIENT = backgroundGradientFromPalette(GRID_COLOR_SCALE)
 export function GridEntity({grid, gridId}: GridEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
-    const isVisible = useSelector(state => gridVisibilitySelector(state, gridId))
-    const gridInfo = useSelector(state => isoxmlFileGridInfoSelector(state, gridId))
+    const isVisible = useSelector((state: RootState) => gridVisibilitySelector(state, gridId))
+    const gridInfo = useSelector((state: RootState) => isoxmlFileGridInfoSelector(state, gridId))
 
     const onVisibilityClick = useCallback(() => {
         dispatch(setGridVisibility({gridId, visible: !isVisible}))

@@ -19,10 +19,11 @@ import {
     timeLogVisibilitySelector
 } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
-import { AppDispatch } from "../../store";
+import { AppDispatch, RootState } from "../../store";
 
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
+import { Typography } from "@mui/material";
 
 const TIMELOG_BACKGROUND = backgroundGradientFromPalette(TIMELOG_COLOR_SCALE)
 
@@ -33,9 +34,9 @@ interface TimeLogEntityProps {
 export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
-    const isVisible = useSelector(state => timeLogVisibilitySelector(state, timeLogId))
-    const excludeOutliers = useSelector(state => timeLogExcludeOutliersSelector(state, timeLogId))
-    const selectedValueKey = useSelector(state => timeLogSelectedValueSelector(state, timeLogId))
+    const isVisible = useSelector((state: RootState) => timeLogVisibilitySelector(state, timeLogId))
+    const excludeOutliers = useSelector((state: RootState) => timeLogExcludeOutliersSelector(state, timeLogId))
+    const selectedValueKey = useSelector((state: RootState) => timeLogSelectedValueSelector(state, timeLogId))
 
     const onVisibilityClick = useCallback(() => {
         parseTimeLog(timeLogId)
@@ -61,17 +62,20 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     let selectedValueInfo: DataLogValueInfo = null
     let min: number
     let max: number
-    if (isVisible) {
+    if (isVisible && selectedValueKey) {
         const timeLogInfo = getTimeLogInfo(timeLogId)
         variableValuesInfo = timeLogInfo.valuesInfo.filter(
             valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
         )
+
         selectedValueInfo = variableValuesInfo
             .find(info => info.valueKey === selectedValueKey)
 
-        const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
-        min = minValue
-        max = maxValue
+        if (selectedValueInfo) {
+            const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
+            min = minValue
+            max = maxValue
+        }
     }
 
     return (<>
@@ -82,7 +86,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
             isVisible={isVisible}
         />
         {isVisible && variableValuesInfo.length > 0 && (
-            <Box sx={{pb: 4}}>
+            <Box sx={{pb: 2}}>
                 <FormControl size='small' variant='standard' sx={{width: '100%'}}>
                     <Select
                         sx={{ width: '100%', fontSize: '0.9rem', fontStyle: 'italic' }}
@@ -125,6 +129,11 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                     label="Exclude outliers"
                 />
             </Box>
+        )}
+        {isVisible && variableValuesInfo.length === 0 && (
+            <Typography variant='body2' sx={{pb: 2, fontStyle: 'italic'}}>
+                No variable data process values
+            </Typography>
         )}
     </>)
 }

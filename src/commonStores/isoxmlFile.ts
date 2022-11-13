@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { ValueInformation, ExtendedGrid, ExtendedTask, ISOXMLManager } from 'isoxml'
+import { RootState } from '../store'
 import { calculateGridValuesRange } from '../utils'
 import { clearISOXMLManagerData, getISOXMLManager, setISOXMLManagerData } from './isoxmlFileInfo'
 
@@ -74,6 +75,7 @@ export const loadFile = (file: File) => async (dispatch: any) => {
         try {
             await isoxmlManager.parseISOXMLFile(array, 'application/zip')
             setISOXMLManagerData(isoxmlManager, {})
+            console.log(isoxmlManager.getWarnings())
             dispatch(loadingDone())
         } catch(e) {
             console.log('error', e)
@@ -89,8 +91,8 @@ export const loadFile = (file: File) => async (dispatch: any) => {
 }
 
 // Selectors
-export const isoxmlFileStateSelector = (state: any) => state.isoxmlFile.state
-export const isoxmlFileGridsInfoSelector = (state: any): {[taskId: string]: GridInfo} =>
+export const isoxmlFileStateSelector = (state: RootState) => state.isoxmlFile.state
+export const isoxmlFileGridsInfoSelector = (state: RootState): {[taskId: string]: GridInfo} =>
     state.isoxmlFile.gridsInfo
-export const isoxmlFileGridInfoSelector = (state: any, gridId: string): GridInfo =>
+export const isoxmlFileGridInfoSelector = (state: RootState, gridId: string): GridInfo =>
     state.isoxmlFile.gridsInfo[gridId]

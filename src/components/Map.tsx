@@ -74,14 +74,17 @@ export function Map() {
 
     const timeLogLayers = Object.keys(visibleTimeLogs)
         .filter(key => visibleTimeLogs[key])
-        .map(timeLogId => {
+        .flatMap(timeLogId => {
             const valueKey = timeLogsSelectedValue[timeLogId]
+            if (!valueKey) {
+                return []
+            }
             const excludeOutliers = timeLogsExcludeOutliers[timeLogId]
             const geoJSON = getTimeLogGeoJSON(timeLogId)
 
             const { minValue, maxValue } = getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
 
-            return new TimeLogLayer(timeLogId, geoJSON, valueKey, minValue, maxValue)
+            return [new TimeLogLayer(timeLogId, geoJSON, valueKey, minValue, maxValue)]
         })
     
     const viewStateRef = useRef(null)
