@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import { Grid } from "isoxml";
 
 import { isoxmlFileGridInfoSelector } from "../../commonStores/isoxmlFile";
-import { backgroundGradientFromPalette, gridBounds, GRID_COLOR_SCALE } from "../../utils";
+import { gridBounds, GRID_COLOR_SCALE } from "../../utils";
 import { gridVisibilitySelector, setGridVisibility } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
 import { AppDispatch, RootState } from "../../store";
@@ -17,8 +17,6 @@ interface GridEntityProps {
     gridId: string
     grid: Grid
 }
-
-const BACKGROUND_GRADIENT = backgroundGradientFromPalette(GRID_COLOR_SCALE)
 
 export function GridEntity({grid, gridId}: GridEntityProps) {
     const dispatch: AppDispatch = useDispatch()
@@ -50,7 +48,7 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
                     valueInfo={gridInfo}
                     min={gridInfo.min}
                     max={gridInfo.max}
-                    paletteSx={{height: '16px', background: BACKGROUND_GRADIENT}}
+                    palette={GRID_COLOR_SCALE}
                 />
             </Box>
         )}

@@ -8,7 +8,7 @@ import Checkbox from "@mui/material/Checkbox";
 import FormControl from "@mui/material/FormControl";
 import { DataLogValueInfo } from "isoxml";
 
-import { backgroundGradientFromPalette, TIMELOG_COLOR_SCALE } from "../../utils";
+import { TIMELOG_COLOR_SCALE } from "../../utils";
 import { getTimeLogInfo, getTimeLogValuesRange, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
 import {
     setExcludeOutliers,
@@ -24,8 +24,6 @@ import { AppDispatch, RootState } from "../../store";
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
 import { Typography } from "@mui/material";
-
-const TIMELOG_BACKGROUND = backgroundGradientFromPalette(TIMELOG_COLOR_SCALE)
 
 interface TimeLogEntityProps {
     timeLogId: string
@@ -65,7 +63,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     if (isVisible && selectedValueKey) {
         const timeLogInfo = getTimeLogInfo(timeLogId)
         variableValuesInfo = timeLogInfo.valuesInfo.filter(
-            valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
+            valueInfo => 'minValue' in valueInfo
         )
 
         selectedValueInfo = variableValuesInfo
@@ -115,7 +113,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                     valueInfo={selectedValueInfo}
                     min={min}
                     max={max}
-                    paletteSx={{ height: '16px', background: TIMELOG_BACKGROUND }}
+                    palette={TIMELOG_COLOR_SCALE}
                 />
                 <FormControlLabel
                     sx={{fontSize: '0.9rem'}}

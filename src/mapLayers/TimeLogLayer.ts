@@ -6,8 +6,11 @@ const OUTLIER_COLOR: [number, number, number] = [255, 0, 255]
 
 export default class TimeLogLayer extends GeoJsonLayer<unknown>{
     constructor(timeLogId: string, geoJSON: any, valueKey: string, minValue: number, maxValue: number) {
+        const colors = TIMELOG_COLOR_SCALE.colors(undefined)
+
+         // if we have only one value, use the last value in the palette
         const palette = chroma
-            .scale((TIMELOG_COLOR_SCALE.colors as any)())
+            .scale(minValue === maxValue ? [colors[colors.length - 1]] : colors)
             .domain([minValue, maxValue])
 
         super({

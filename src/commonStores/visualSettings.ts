@@ -16,7 +16,7 @@ const setDefaultTimeLogValue = (state: VisualSettingsState, id: string) => {
     if (!state.timeLogsSelectedValue[id] && state.timeLogsVisibility[id]) {
         const timeLogCache = getTimeLogsCache()[id]
         const variableValuesInfo = timeLogCache.valuesInfo.find(
-            valueInfo => 'minValue' in valueInfo && valueInfo.minValue !== valueInfo.maxValue
+            valueInfo => 'minValue' in valueInfo
         )
         if (variableValuesInfo) {
             state.timeLogsSelectedValue[id] = variableValuesInfo.valueKey

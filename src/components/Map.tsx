@@ -200,8 +200,8 @@ export function Map() {
                         border: '1px solid gray',
                         position: 'absolute',
                         transform: 'translate(-50%, -120%)',
-                        padding: 4,
-                        borderRadius: 4
+                        padding: 2,
+                        borderRadius: 2
                     }}
                     style={{left: tooltip.x, top: tooltip.y}}
                 >
