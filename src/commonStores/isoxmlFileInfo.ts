@@ -85,7 +85,7 @@ export const getRangeWithoutOutliers = (timeLogId: string, valueKey: string) => 
 
     if (!(timeLogId in ranges)) {
         const timeLog = findTimeLogById(timeLogId)
-        ranges[timeLogId] = timeLog.rangesWithoutOutliyers()
+        ranges[timeLogId] = timeLog.rangesWithoutOutliers()
     }
 
     const idx = isoxmlManagerInfo.timeLogsCache[timeLogId]?.valuesInfo.findIndex(info => info.valueKey === valueKey)
