@@ -9,7 +9,8 @@ interface VisualSettingsState {
     timeLogsVisibility: Record<string, boolean>
     partfieldsVisibility: Record<string, boolean>
     timeLogsSelectedValue: Record<string, string>
-    excludeOutliers: Record<string, boolean>
+    excludeOutliers: Record<string, boolean>,
+    fillMissingValues: Record<string, boolean>
 }
 
 const setDefaultTimeLogValue = (state: VisualSettingsState, id: string) => {
@@ -24,15 +25,18 @@ const setDefaultTimeLogValue = (state: VisualSettingsState, id: string) => {
     }
 }
 
+const initialState: VisualSettingsState = {
+    gridsVisibility: {},
+    timeLogsVisibility: {},
+    partfieldsVisibility: {},
+    timeLogsSelectedValue: {},
+    excludeOutliers: {},
+    fillMissingValues: {}
+}
+
 export const visualSettingsSlice = createSlice({
     name: 'visualSettings',
-    initialState: {
-        gridsVisibility: {},
-        timeLogsVisibility: {},
-        partfieldsVisibility: {},
-        timeLogsSelectedValue: {},
-        excludeOutliers: {}
-    } as VisualSettingsState,
+    initialState,
     reducers: {
         setGridVisibility: (state, action) => {
             const {gridId, visible} = action.payload
@@ -54,16 +58,14 @@ export const visualSettingsSlice = createSlice({
         setExcludeOutliers: (state, action) => {
             const {timeLogId, exclude} = action.payload
             state.excludeOutliers[timeLogId] = exclude
+        },
+        setFillMissingOutliers: (state, action) => {
+            const {timeLogId, fill} = action.payload
+            state.fillMissingValues[timeLogId] = fill
         }
     },
     extraReducers: builder => {
-        builder.addCase(startLoading, state => {
-            state.gridsVisibility = {}
-            state.timeLogsVisibility = {}
-            state.timeLogsSelectedValue = {}
-            state.excludeOutliers = {}
-            state.partfieldsVisibility = {}
-        })
+        builder.addCase(startLoading, () => initialState)
     }
 })
 
@@ -73,7 +75,8 @@ export const {
     setTimeLogVisibility,
     setPartfieldVisibility,
     setTimeLogValue,
-    setExcludeOutliers
+    setExcludeOutliers,
+    setFillMissingOutliers
 } = visualSettingsSlice.actions
 
 // selectors
@@ -96,5 +99,9 @@ export const timeLogSelectedValueSelector =
 export const timeLogsExcludeOutliersSelector = (state: RootState) => state.visualSettings.excludeOutliers
 export const timeLogExcludeOutliersSelector =
     (state: RootState, timeLogId: string) => !!state.visualSettings.excludeOutliers[timeLogId]
+
+export const timeLogsFillMissingValuesSelector = (state: RootState) => state.visualSettings.fillMissingValues
+export const timeLogFillMissingValuesSelector =
+    (state: RootState, timeLogId: string) => !!state.visualSettings.fillMissingValues[timeLogId]
 
 export default visualSettingsSlice.reducer

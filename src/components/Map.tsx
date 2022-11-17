@@ -9,6 +9,7 @@ import {
     gridsVisibilitySelector,
     partfieldsVisibilitySelector,
     timeLogsExcludeOutliersSelector,
+    timeLogsFillMissingValuesSelector,
     timeLogsSelectedValueSelector,
     timeLogsVisibilitySelector
 } from '../commonStores/visualSettings'
@@ -49,6 +50,7 @@ export function Map() {
     const visibleTimeLogs = useSelector(timeLogsVisibilitySelector)
     const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
     const timeLogsExcludeOutliers = useSelector(timeLogsExcludeOutliersSelector)
+    const timeLogsFillMissingValues = useSelector(timeLogsFillMissingValuesSelector)
 
     const visiblePartfields = useSelector(partfieldsVisibilitySelector)
 
@@ -80,7 +82,8 @@ export function Map() {
                 return []
             }
             const excludeOutliers = timeLogsExcludeOutliers[timeLogId]
-            const geoJSON = getTimeLogGeoJSON(timeLogId)
+            const fillValues = timeLogsFillMissingValues[timeLogId]
+            const geoJSON = getTimeLogGeoJSON(timeLogId, fillValues)
 
             const { minValue, maxValue } = getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
 

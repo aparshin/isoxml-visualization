@@ -12,9 +12,11 @@ import { TIMELOG_COLOR_SCALE } from "../../utils";
 import { getTimeLogInfo, getTimeLogValuesRange, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
 import {
     setExcludeOutliers,
+    setFillMissingOutliers,
     setTimeLogValue,
     setTimeLogVisibility,
     timeLogExcludeOutliersSelector,
+    timeLogFillMissingValuesSelector,
     timeLogSelectedValueSelector,
     timeLogVisibilitySelector
 } from "../../commonStores/visualSettings";
@@ -29,24 +31,44 @@ interface TimeLogEntityProps {
     timeLogId: string
 }
 
+const TimeLogCheckbox = ({label, checked, onChange}: {
+    label: string,
+    checked: boolean,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => void
+}) => (
+    <FormControlLabel
+        sx={{fontSize: '0.9rem'}}
+        componentsProps={{typography: {variant: 'body2'}}}
+        control={ <Checkbox
+            sx={{py: 0.125}}
+            checked={checked}
+            onChange={onChange}
+            color="primary"
+            size="small"
+        /> }
+        label={label}
+    />
+)
+
 export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
     const isVisible = useSelector((state: RootState) => timeLogVisibilitySelector(state, timeLogId))
     const excludeOutliers = useSelector((state: RootState) => timeLogExcludeOutliersSelector(state, timeLogId))
+    const fillMissingValues = useSelector((state: RootState) => timeLogFillMissingValuesSelector(state, timeLogId))
     const selectedValueKey = useSelector((state: RootState) => timeLogSelectedValueSelector(state, timeLogId))
 
     const onVisibilityClick = useCallback(() => {
-        parseTimeLog(timeLogId)
+        parseTimeLog(timeLogId, fillMissingValues)
         dispatch(setTimeLogVisibility({timeLogId, visible: !isVisible}))
-    }, [dispatch, timeLogId, isVisible])
+    }, [dispatch, timeLogId, isVisible, fillMissingValues])
 
     const onZoomToClick = useCallback(() => {
-        parseTimeLog(timeLogId)
+        parseTimeLog(timeLogId, fillMissingValues)
         const updatedTimeLogInfo = getTimeLogInfo(timeLogId)
         dispatch(fitBounds([...updatedTimeLogInfo.bbox]))
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
-    }, [dispatch, timeLogId])
+    }, [dispatch, timeLogId, fillMissingValues])
 
     const onValueChange = useCallback((event) => {
         dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
@@ -54,6 +76,10 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
 
     const onExcludeOutlier = useCallback(event => {
         dispatch(setExcludeOutliers({timeLogId, exclude: event.target.checked}))
+    }, [dispatch, timeLogId])
+
+    const onFillMissingValues = useCallback(event => {
+        dispatch(setFillMissingOutliers({timeLogId, fill: event.target.checked}))
     }, [dispatch, timeLogId])
 
     let variableValuesInfo: DataLogValueInfo[] = []
@@ -115,16 +141,15 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                     max={max}
                     palette={TIMELOG_COLOR_SCALE}
                 />
-                <FormControlLabel
-                    sx={{fontSize: '0.9rem'}}
-                    componentsProps={{typography: {variant: 'body2'}}}
-                    control={ <Checkbox
-                        checked={excludeOutliers}
-                        onChange={onExcludeOutlier}
-                        color="primary"
-                        size="small"
-                    /> }
+                <TimeLogCheckbox
+                    checked={excludeOutliers}
+                    onChange={onExcludeOutlier}
                     label="Exclude outliers"
+                />
+                <TimeLogCheckbox
+                    checked={fillMissingValues}
+                    onChange={onFillMissingValues}
+                    label="Fill missing values"
                 />
             </Box>
         )}

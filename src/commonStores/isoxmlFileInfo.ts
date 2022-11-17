@@ -1,12 +1,13 @@
-import { ExtendedPartfield, ExtendedTimeLog, ISOXMLManager, TimeLogInfo } from "isoxml"
+import { ExtendedPartfield, ExtendedTimeLog, ISOXMLManager, TimeLogInfo, TimeLogRecord } from "isoxml"
 
 // The reason to keet it out of the store is to avoid non-serializable and too big data in the store
 // No parts of this app should modify data in this ISOXMLManager
 
 interface ISOXMLManagerInfo {
     isoxmlManager: ISOXMLManager
-    timeLogsCache: {[timeLogId: string]: TimeLogInfo}
+    timeLogsCache: {[timeLogId: string]: TimeLogInfo & {filledTimeLogs?: TimeLogRecord[]}}
     timeLogsGeoJSONs: {[timeLogId: string]: any}
+    timeLogsFilledGeoJSONs: {[timeLogId: string]: any}
     timeLogsRangesWithoutOutliers: {[timeLogId: string]: {minValue: number, maxValue: number}[]},
     partfieldGeoJSONs: {[partfieldId: string]: any}
 }
@@ -24,27 +25,37 @@ function findTimeLogById (timeLogId: string) {
     return null
 }
 
-export const parseTimeLog = (timeLogId: string) => {
-    if (isoxmlManagerInfo.timeLogsCache?.[timeLogId]) {
-        return 
+export const parseTimeLog = (timeLogId: string, fillMissingValues: boolean) => {
+    let timeLog: ExtendedTimeLog = undefined
+
+    if (!isoxmlManagerInfo.timeLogsCache?.[timeLogId]) {
+        timeLog = findTimeLogById(timeLogId)
+        isoxmlManagerInfo.timeLogsCache[timeLogId] = {...timeLog.parseBinaryFile()}
     }
 
-    const timeLog = findTimeLogById(timeLogId)
-    isoxmlManagerInfo.timeLogsCache[timeLogId] = timeLog.parseBinaryFile()
+    const timeLogInfo = isoxmlManagerInfo.timeLogsCache[timeLogId]
+    if (fillMissingValues && !timeLogInfo.filledTimeLogs) {
+        timeLog = timeLog || findTimeLogById(timeLogId)
+        timeLogInfo.filledTimeLogs = timeLog.getFilledTimeLogs()
+    }
 }
 
-export const getTimeLogGeoJSON = (timeLogId: string) => {
+export const getTimeLogGeoJSON = (timeLogId: string, fillMissingValues: boolean) => {
     if (!isoxmlManagerInfo) {
         return null
     }
 
-    if (isoxmlManagerInfo?.timeLogsGeoJSONs[timeLogId]) {
-        return isoxmlManagerInfo.timeLogsGeoJSONs[timeLogId]
+    const targetKey = fillMissingValues ? 'timeLogsFilledGeoJSONs' : 'timeLogsGeoJSONs'
+
+    if (isoxmlManagerInfo?.[targetKey][timeLogId]) {
+        return isoxmlManagerInfo[targetKey][timeLogId]
     }
 
-    parseTimeLog(timeLogId)
+    parseTimeLog(timeLogId, fillMissingValues)
 
-    const timeLogs = isoxmlManagerInfo.timeLogsCache[timeLogId].timeLogs
+    const timeLogs = fillMissingValues
+        ? isoxmlManagerInfo.timeLogsCache[timeLogId].filledTimeLogs
+        : isoxmlManagerInfo.timeLogsCache[timeLogId].timeLogs
 
     const geoJSON = {
         type: 'FeatureCollection',
@@ -59,7 +70,7 @@ export const getTimeLogGeoJSON = (timeLogId: string) => {
             }))
     }
 
-    isoxmlManagerInfo.timeLogsGeoJSONs[timeLogId] = geoJSON
+    isoxmlManagerInfo[targetKey][timeLogId] = geoJSON
     return geoJSON
 }
 
@@ -115,6 +126,7 @@ export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager, timeLogsCache
         isoxmlManager,
         timeLogsCache,
         timeLogsGeoJSONs: {},
+        timeLogsFilledGeoJSONs: {},
         timeLogsRangesWithoutOutliers: {},
         partfieldGeoJSONs: {}
     }
