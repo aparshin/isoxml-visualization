@@ -121,10 +121,10 @@ export const clearISOXMLManagerData = () => {
     isoxmlManagerInfo = null
 }
 
-export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager, timeLogsCache: {[timeLogId: string]: TimeLogInfo}) => {
+export const setISOXMLManagerData = (isoxmlManager: ISOXMLManager) => {
     isoxmlManagerInfo = {
         isoxmlManager,
-        timeLogsCache,
+        timeLogsCache: {},
         timeLogsGeoJSONs: {},
         timeLogsFilledGeoJSONs: {},
         timeLogsRangesWithoutOutliers: {},

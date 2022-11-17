@@ -1,27 +1,44 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useDropzone } from 'react-dropzone'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import GithubIcon from '@mui/icons-material/GitHub'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import WarningIcon from '@mui/icons-material/Warning'
+import DialogContent from '@mui/material/DialogContent'
 
-import { ISOXMLFileState, isoxmlFileStateSelector, loadFile } from '../commonStores/isoxmlFile'
+import { isoxmlFileErrorsSelector, ISOXMLFileState, isoxmlFileStateSelector, isoxmlFileWarningsSelector, loadFile } from '../commonStores/isoxmlFile'
 import { AppDispatch } from '../store'
 import { ISOXMLFileStructure } from './ISOXMLFileStructure'
 
 export function MainPanel() {
+    const [openWarnings, setOpenWarnings] = useState(false)
+    const handleOpenWarnings = () => setOpenWarnings(true)
+    const handleCloseWarnings = () => setOpenWarnings(false)
+
     const dispatch: AppDispatch = useDispatch()
     const onDrop = useCallback(files => {
         dispatch(loadFile(files[0]))
     }, [dispatch])
     const {getRootProps, getInputProps, isDragActive, open} = useDropzone({onDrop, noClick: true, noKeyboard: true})
     const fileState = useSelector(isoxmlFileStateSelector)
+    const isoxmlWarnings = useSelector(isoxmlFileWarningsSelector)
+    const isoxmlErrors = useSelector(isoxmlFileErrorsSelector)
 
     const errorMsg = fileState === ISOXMLFileState.ERROR && (
-        <Typography sx={{color: 'red', fontWeight: 'bold', pb: 4}}>
-            Error loading ISOXML file
-        </Typography>
+        <>
+            <Typography sx={{color: 'red', fontWeight: 'bold', pb: 4}}>
+                Error loading ISOXML file
+            </Typography>
+            {isoxmlErrors.length > 0 && (
+                <Typography variant="body2" sx={{textOverflow: 'hidden', color: 'red', pb: 4}}>
+                    {isoxmlErrors.join(';')}
+                </Typography>
+            )}
+        </>
     )
 
     return (
@@ -82,12 +99,26 @@ export function MainPanel() {
             {fileState === ISOXMLFileState.LOADED && (
                 <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
                     <Box sx={{
-                        textAlign: 'center',
                         borderBottom: '1px solid gray',
-                        padding: '8px'
+                        p: 1,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center'
                     }}>
-                        <Button size="small" variant="contained" color="primary" onClick={open}>Open another ISOXML ZIP file</Button>
-                    </Box>
+                        <Button size="small" variant="contained" color="primary" onClick={open}>Open another ISOXML file</Button>
+                        {isoxmlWarnings.length > 0 && (
+                            <Button
+                                sx={{ml: 1}}
+                                startIcon={<WarningIcon sx={{color: "orange", mr: -0.75}}/>}
+                                size="small"
+                                color="inherit"
+                                title="Mode details"
+                                onClick={handleOpenWarnings}
+                            >
+                                {isoxmlWarnings.length}
+                            </Button>
+                        )}
+                        </Box>
                     <Box sx={{
                         flex: '1 1 auto',
                         overflowY: 'auto',
@@ -97,6 +128,19 @@ export function MainPanel() {
                     </Box>
                 </Box>
             )}
+            <Dialog
+                open={openWarnings}
+                onClose={handleCloseWarnings}
+                fullWidth={true}
+                maxWidth="md"
+            >
+                <DialogTitle>Warnings</DialogTitle>
+                <DialogContent>
+                    {isoxmlWarnings.map(warning => (
+                        <Box>{warning}</Box>
+                    ))}
+                </DialogContent>
+            </Dialog>
         </Box>
     )
 }

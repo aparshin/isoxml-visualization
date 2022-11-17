@@ -16,6 +16,8 @@ export type GridInfo = ValueInformation & {min: number, max: number}
 type IsoxmlFileState = {
     state: ISOXMLFileState
     gridsInfo: {[taskId: string]: GridInfo}
+    errors: string[]
+    warnings: string[]
 }
 
 
@@ -24,11 +26,15 @@ export const isoxmlFileSlice = createSlice({
     initialState: {
         state: ISOXMLFileState.NOT_LOADED,
         gridsInfo: {},
+        errors: [],
+        warnings: []
     } as IsoxmlFileState,
     reducers: {
         startLoading: state => {
             state.state = ISOXMLFileState.LOADING
             state.gridsInfo = {}
+            state.errors = []
+            state.warnings = []
             clearISOXMLManagerData()
         },
 
@@ -36,6 +42,7 @@ export const isoxmlFileSlice = createSlice({
             const isoxmlManager = getISOXMLManager()
             state.state = ISOXMLFileState.LOADED
             state.gridsInfo = {}
+            state.warnings = isoxmlManager.getWarnings()
             ;(isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
                 const grid = task.attributes.Grid?.[0] as ExtendedGrid
                 const taskXmlId = isoxmlManager.getReferenceByEntity(task).xmlId
@@ -50,8 +57,9 @@ export const isoxmlFileSlice = createSlice({
             })
         },
 
-        loadingError: state => {
+        loadingError: (state, action) => {
             state.state = ISOXMLFileState.ERROR
+            state.errors = action.payload.errors
             state.gridsInfo = {}
             clearISOXMLManagerData()
         },
@@ -74,17 +82,17 @@ export const loadFile = (file: File) => async (dispatch: any) => {
         const array = new Uint8Array(reader.result as ArrayBuffer)
         try {
             await isoxmlManager.parseISOXMLFile(array, 'application/zip')
-            setISOXMLManagerData(isoxmlManager, {})
+            setISOXMLManagerData(isoxmlManager)
             console.log(isoxmlManager.getWarnings())
             dispatch(loadingDone())
         } catch(e) {
             console.log('error', e)
-            dispatch(loadingError())
+            dispatch(loadingError({errors: [e.toString()]}))
         }
     }
 
     reader.onerror = () => {
-        dispatch(loadingError())
+        dispatch(loadingError({errors: [reader.error.toString()]}))
     }
 
     reader.readAsArrayBuffer(file)
@@ -96,3 +104,5 @@ export const isoxmlFileGridsInfoSelector = (state: RootState): {[taskId: string]
     state.isoxmlFile.gridsInfo
 export const isoxmlFileGridInfoSelector = (state: RootState, gridId: string): GridInfo =>
     state.isoxmlFile.gridsInfo[gridId]
+export const isoxmlFileWarningsSelector = (state: RootState) => state.isoxmlFile.warnings
+export const isoxmlFileErrorsSelector = (state: RootState) => state.isoxmlFile.errors
