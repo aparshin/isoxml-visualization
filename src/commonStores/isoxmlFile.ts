@@ -83,10 +83,8 @@ export const loadFile = (file: File) => async (dispatch: any) => {
         try {
             await isoxmlManager.parseISOXMLFile(array, 'application/zip')
             setISOXMLManagerData(isoxmlManager)
-            console.log(isoxmlManager.getWarnings())
             dispatch(loadingDone())
         } catch(e) {
-            console.log('error', e)
             dispatch(loadingError({errors: [e.toString()]}))
         }
     }

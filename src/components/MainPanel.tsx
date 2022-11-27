@@ -56,14 +56,17 @@ export function MainPanel() {
         >
             <input {...getInputProps()} />
             {(fileState === ISOXMLFileState.NOT_LOADED || fileState === ISOXMLFileState.ERROR) && (
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    textAlign: 'center',
-                    height: '100%',
-                    margin: '0 16px'
-                }}>
+                <Box
+                    key="not-loaded"
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        textAlign: 'center',
+                        height: '100%',
+                        margin: '0 16px'
+                    }}
+                >
                     {errorMsg}
                     <Button variant="contained" color="primary" onClick={open}>Select ISOXML ZIP file</Button>
                     <Typography variant="h6">or drop it here</Typography>
@@ -85,19 +88,25 @@ export function MainPanel() {
                 </Box>
             )}
             {fileState === ISOXMLFileState.LOADING && (
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    textAlign: 'center',
-                    height: '100%',
-                    margin: '0 16px'
-                }}>
+                <Box
+                    key="loading"
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        textAlign: 'center',
+                        height: '100%',
+                        margin: '0 16px'
+                    }}
+                >
                     <Typography variant="h6">Loading ISOXML file, please wait...</Typography>
                 </Box>
             )}
             {fileState === ISOXMLFileState.LOADED && (
-                <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                <Box
+                    key="loaded"
+                    sx={{display: 'flex', flexDirection: 'column', height: '100%'}}
+                >
                     <Box sx={{
                         borderBottom: '1px solid gray',
                         p: 1,
@@ -136,8 +145,8 @@ export function MainPanel() {
             >
                 <DialogTitle>Warnings</DialogTitle>
                 <DialogContent>
-                    {isoxmlWarnings.map(warning => (
-                        <Box>{warning}</Box>
+                    {isoxmlWarnings.map((warning, idx) => (
+                        <Box key={idx}>{warning}</Box>
                     ))}
                 </DialogContent>
             </Dialog>

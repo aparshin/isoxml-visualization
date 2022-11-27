@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Box from "@mui/material/Box";
 import MenuItem from "@mui/material/MenuItem";
@@ -6,6 +6,9 @@ import Select from "@mui/material/Select";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
 import FormControl from "@mui/material/FormControl";
+import ListSubheader from "@mui/material/ListSubheader";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
 import { DataLogValueInfo } from "isoxml";
 
 import { TIMELOG_COLOR_SCALE } from "../../utils";
@@ -25,11 +28,31 @@ import { AppDispatch, RootState } from "../../store";
 
 import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
-import { Typography } from "@mui/material";
 
 interface TimeLogEntityProps {
     timeLogId: string
 }
+
+const renderMenuItem = (valueInfo: DataLogValueInfo) => (
+    <MenuItem
+        sx={{
+            flexDirection: 'column',
+            alignItems: 'start',
+            color: valueInfo.isProprietary ? '#673ab7': 'initial'
+        }}
+        key={valueInfo.valueKey}
+        value={valueInfo.valueKey}
+    >
+        <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>{
+            valueInfo.DDEntityName
+                ? `DDI: 0x${valueInfo.DDIString}\u2002${valueInfo.DDEntityName}`
+                : `DDI 0x${valueInfo.DDIString}`
+        }</Box>
+        <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>
+            {valueInfo.deviceElementDesignator || `Device ${valueInfo.deviceElementId}`}
+        </Box>
+    </MenuItem>
+)
 
 const TimeLogCheckbox = ({label, checked, onChange}: {
     label: string,
@@ -82,18 +105,25 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         dispatch(setFillMissingOutliers({timeLogId, fill: event.target.checked}))
     }, [dispatch, timeLogId])
 
-    let variableValuesInfo: DataLogValueInfo[] = []
+    const valuesInfo: DataLogValueInfo[] = useMemo(() => {
+        if (!isVisible) {
+            return []
+        }
+        const timeLogInfo = getTimeLogInfo(timeLogId)
+        return timeLogInfo.valuesInfo.filter(
+            valueInfo => 'minValue' in valueInfo
+        )
+
+    }, [timeLogId, isVisible])
+
+    const standardValuesInfo = valuesInfo.filter(valueInfo => !valueInfo.isProprietary)
+    const proprietaryValuesInfo = valuesInfo.filter(valueInfo => valueInfo.isProprietary)
+
     let selectedValueInfo: DataLogValueInfo = null
     let min: number
     let max: number
     if (isVisible && selectedValueKey) {
-        const timeLogInfo = getTimeLogInfo(timeLogId)
-        variableValuesInfo = timeLogInfo.valuesInfo.filter(
-            valueInfo => 'minValue' in valueInfo
-        )
-
-        selectedValueInfo = variableValuesInfo
-            .find(info => info.valueKey === selectedValueKey)
+        selectedValueInfo = valuesInfo.find(info => info.valueKey === selectedValueKey)
 
         if (selectedValueInfo) {
             const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
@@ -109,7 +139,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
             onZoomToClick={onZoomToClick}
             isVisible={isVisible}
         />
-        {isVisible && variableValuesInfo.length > 0 && (
+        {isVisible && valuesInfo.length > 0 && selectedValueInfo && (
             <Box sx={{pb: 2}}>
                 <FormControl size='small' variant='standard' sx={{width: '100%'}}>
                     <Select
@@ -117,22 +147,17 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                         value={selectedValueInfo.valueKey}
                         onChange={onValueChange}
                     >
-                        {variableValuesInfo.map(valueInfo => (
-                            <MenuItem
-                                sx={{ flexDirection: 'column', alignItems: 'start' }}
-                                key={valueInfo.valueKey}
-                                value={valueInfo.valueKey}
-                            >
-                                <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>{
-                                    valueInfo.DDEntityName
-                                        ? `${valueInfo.DDEntityName} (DDI: ${valueInfo.DDIString})`
-                                        : `DDI ${valueInfo.DDIString}`
-                                }</Box>
-                                <Box sx={{ overflowX: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {valueInfo.deviceElementDesignator || `Device ${valueInfo.deviceElementId}`}
-                                </Box>
-                            </MenuItem>
-                        ))}
+                        {standardValuesInfo.map(renderMenuItem)}
+                        {proprietaryValuesInfo.length > 0 && (
+                            <ListSubheader>
+                                <Divider>
+                                    <Typography sx={{my: 2}}>
+                                        Proprietary TimeLog values
+                                    </Typography>
+                                </Divider>
+                            </ListSubheader>
+                        )}
+                        {proprietaryValuesInfo.map(renderMenuItem)}
                     </Select>
                 </FormControl>
                 <ValueDataPalette
@@ -153,7 +178,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
                 />
             </Box>
         )}
-        {isVisible && variableValuesInfo.length === 0 && (
+        {isVisible && valuesInfo.length === 0 && (
             <Typography variant='body2' sx={{pb: 2, fontStyle: 'italic'}}>
                 No variable data process values
             </Typography>
