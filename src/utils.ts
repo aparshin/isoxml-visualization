@@ -38,8 +38,10 @@ export function calculateGridValuesRange (
             if (pdv) {
                 const value = pdv.attributes.ProcessDataValue
 
-                min = Math.min(min, value)
-                max = Math.max(max, value)
+                if (value) {
+                    min = Math.min(min, value)
+                    max = Math.max(max, value)
+                }
             }
         })
     } else {
