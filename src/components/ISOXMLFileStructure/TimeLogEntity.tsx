@@ -89,7 +89,10 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const onZoomToClick = useCallback(() => {
         parseTimeLog(timeLogId, fillMissingValues)
         const updatedTimeLogInfo = getTimeLogInfo(timeLogId)
-        dispatch(fitBounds([...updatedTimeLogInfo.bbox]))
+        const bbox = updatedTimeLogInfo.bbox
+        if (bbox.every(pos => isFinite(pos))) {
+            dispatch(fitBounds([...updatedTimeLogInfo.bbox]))
+        }
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
     }, [dispatch, timeLogId, fillMissingValues])
 
@@ -116,6 +119,8 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
 
     }, [timeLogId, isVisible])
 
+    const parsingWarnings = getTimeLogInfo(timeLogId)?.parsingErrors || []
+
     const standardValuesInfo = valuesInfo.filter(valueInfo => !valueInfo.isProprietary)
     const proprietaryValuesInfo = valuesInfo.filter(valueInfo => valueInfo.isProprietary)
 
@@ -138,6 +143,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
             onVisibilityClick={onVisibilityClick}
             onZoomToClick={onZoomToClick}
             isVisible={isVisible}
+            warnings={parsingWarnings}
         />
         {isVisible && valuesInfo.length > 0 && selectedValueInfo && (
             <Box sx={{pb: 2}}>
@@ -180,7 +186,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         )}
         {isVisible && valuesInfo.length === 0 && (
             <Typography variant='body2' sx={{pb: 2, fontStyle: 'italic'}}>
-                No variable data process values
+                No timelog records with valid positions
             </Typography>
         )}
     </>)

@@ -5,7 +5,7 @@ import { ExtendedPartfield, ExtendedTimeLog, ISOXMLManager, TimeLogInfo, TimeLog
 
 interface ISOXMLManagerInfo {
     isoxmlManager: ISOXMLManager
-    timeLogsCache: {[timeLogId: string]: TimeLogInfo & {filledTimeLogs?: TimeLogRecord[]}}
+    timeLogsCache: {[timeLogId: string]: TimeLogInfo & {parsingErrors: string[], filledTimeLogs?: TimeLogRecord[]}}
     timeLogsGeoJSONs: {[timeLogId: string]: any}
     timeLogsFilledGeoJSONs: {[timeLogId: string]: any}
     timeLogsRangesWithoutOutliers: {[timeLogId: string]: {minValue: number, maxValue: number}[]},
@@ -30,7 +30,12 @@ export const parseTimeLog = (timeLogId: string, fillMissingValues: boolean) => {
 
     if (!isoxmlManagerInfo.timeLogsCache?.[timeLogId]) {
         timeLog = findTimeLogById(timeLogId)
-        isoxmlManagerInfo.timeLogsCache[timeLogId] = {...timeLog.parseBinaryFile()}
+        const timeLogInfo = timeLog.parseBinaryFile()
+        isoxmlManagerInfo.timeLogsCache[timeLogId] = {
+            ...timeLogInfo,
+            timeLogs: timeLogInfo.timeLogs.filter(timeLog => timeLog.isValidPosition),
+            parsingErrors: timeLog.parsingErrors
+        }
     }
 
     const timeLogInfo = isoxmlManagerInfo.timeLogsCache[timeLogId]

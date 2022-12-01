@@ -23,7 +23,7 @@
     "@types/react-dom": "^17.0.9",
     "chroma-js": "^2.1.2",
     "clsx": "^1.1.1",
-    "isoxml": "^1.7.2",
+    "isoxml": "^1.8.0",
     "maplibre-gl": "^2.0.0-pre.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

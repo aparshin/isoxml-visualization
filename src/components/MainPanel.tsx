@@ -10,7 +10,13 @@ import DialogTitle from '@mui/material/DialogTitle'
 import WarningIcon from '@mui/icons-material/Warning'
 import DialogContent from '@mui/material/DialogContent'
 
-import { isoxmlFileErrorsSelector, ISOXMLFileState, isoxmlFileStateSelector, isoxmlFileWarningsSelector, loadFile } from '../commonStores/isoxmlFile'
+import {
+    isoxmlFileErrorsSelector,
+    ISOXMLFileState,
+    isoxmlFileStateSelector,
+    isoxmlFileWarningsSelector,
+    loadFile
+} from '../commonStores/isoxmlFile'
 import { AppDispatch } from '../store'
 import { ISOXMLFileStructure } from './ISOXMLFileStructure'
 
@@ -121,7 +127,7 @@ export function MainPanel() {
                                 startIcon={<WarningIcon sx={{color: "orange", mr: -0.75}}/>}
                                 size="small"
                                 color="inherit"
-                                title="Mode details"
+                                title="More details"
                                 onClick={handleOpenWarnings}
                             >
                                 {isoxmlWarnings.length}
