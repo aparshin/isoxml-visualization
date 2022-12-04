@@ -1,5 +1,10 @@
 import React from 'react'
-import { Typography, Box } from '@mui/material'
+import Accordion from '@mui/material/Accordion'
+import Typography from '@mui/material/Typography'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import Box from '@mui/material/Box'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ExtendedPartfield, ExtendedTimeLog } from 'isoxml'
 import { getISOXMLManager } from '../../commonStores/isoxmlFileInfo'
 import { GridEntity } from './GridEntity'
@@ -28,37 +33,50 @@ export function ISOXMLFileStructure() {
                 .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
 
             return (
-                <Box key={taskId} sx={{p: 1}}>
-                    <Typography
-                        sx={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
-                    >
-                        {task.attributes.TaskDesignator || taskId}
-                    </Typography>
-                    {isPartfieldWithGeom && (
-                        <Box sx={{pl: 2}}>
-                            <PartfieldEntity
-                                partfield={partfield}
-                                partfieldId={partfieldId}
-                            />
-                        </Box>
-                    )}
-                    {grid && (
-                        <Box sx={{pl: 2}}>
-                            <GridEntity
-                                gridId={taskId}
-                                grid={grid}
-                            />
-                        </Box>
-                    )}
-                    {timeLogs.map(timeLog => {
-                        const timeLogId = timeLog.attributes.Filename
-                        return (
-                            <Box sx={{pl: 2}} key={timeLogId}>
-                                <TimeLogEntity timeLogId={timeLogId} />
+                <Accordion
+                    defaultExpanded={tasks.length === 1}
+                    key={taskId}
+                    disableGutters elevation={0}
+                    sx={{
+                        '&:before': {
+                            display: 'none',
+                        }
+                    }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography
+                            sx={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
+                        >
+                            {task.attributes.TaskDesignator || taskId}
+                        </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        {isPartfieldWithGeom && (
+                            <Box sx={{pl: 2}}>
+                                <PartfieldEntity
+                                    partfield={partfield}
+                                    partfieldId={partfieldId}
+                                />
                             </Box>
-                        )
-                    })}
-                </Box>
+                        )}
+                        {grid && (
+                            <Box sx={{pl: 2}}>
+                                <GridEntity
+                                    gridId={taskId}
+                                    grid={grid}
+                                />
+                            </Box>
+                        )}
+                        {timeLogs.map(timeLog => {
+                            const timeLogId = timeLog.attributes.Filename
+                            return (
+                                <Box sx={{pl: 2}} key={timeLogId}>
+                                    <TimeLogEntity timeLogId={timeLogId} />
+                                </Box>
+                            )
+                        })}
+                    </AccordionDetails>
+                </Accordion>
             )
         })}
     </>)
