@@ -1,21 +1,41 @@
-import React from 'react'
+import React, { MouseEvent, useMemo, MouseEventHandler } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import Accordion from '@mui/material/Accordion'
 import Typography from '@mui/material/Typography'
 import AccordionSummary from '@mui/material/AccordionSummary'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MergeIcon from '@mui/icons-material/Merge';
+import IconButton from '@mui/material/IconButton'
 import { ExtendedPartfield, ExtendedTimeLog } from 'isoxml'
 import { getISOXMLManager } from '../../commonStores/isoxmlFileInfo'
 import { GridEntity } from './GridEntity'
 import { TimeLogEntity } from './TimeLogEntity'
 import { PartfieldEntity } from './PartfieldEntity'
+import { mergeTimeLogsSelector, toggleMergeTimeLogs } from '../../commonStores/visualSettings'
+import { AppDispatch } from '../../store'
 
 export function ISOXMLFileStructure() {
 
+    const dispatch: AppDispatch = useDispatch()
     const isoxmlManager = getISOXMLManager()
 
+    const mergeTimeLogs = useSelector(mergeTimeLogsSelector)
+
     const tasks = isoxmlManager.rootElement.attributes.Task
+
+    const handleMergeClickCallbacks = useMemo(() => {
+        return tasks.reduce((callbacks, task) => {
+            const taskId = isoxmlManager.getReferenceByEntity(task).xmlId
+            callbacks[taskId] = (event: MouseEvent<HTMLButtonElement>) => {
+                dispatch(toggleMergeTimeLogs({taskId}))
+                event.stopPropagation()
+            }
+            return callbacks
+        }, {} as Record<string, MouseEventHandler<HTMLButtonElement>>)
+    }, [tasks, isoxmlManager, dispatch])
 
     if (!tasks?.length) {
         return <Typography sx={{textAlign: 'center', p: 2}}>No tasks in this TaskSet</Typography>
@@ -31,6 +51,7 @@ export function ISOXMLFileStructure() {
 
             const timeLogs = (task.attributes.TimeLog || [])
                 .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
+            const isTimeLogsToMerge = timeLogs.length > 1
 
             return (
                 <Accordion
@@ -43,12 +64,34 @@ export function ISOXMLFileStructure() {
                         }
                     }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography
-                            sx={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
-                        >
-                            {task.attributes.TaskDesignator || taskId}
-                        </Typography>
+                    <AccordionSummary
+                        sx={{
+                            '& .MuiAccordionSummary-content': {
+                                minWidth: 0
+                            },
+                            flexDirection: 'row-reverse'
+                        }}
+                        expandIcon={<ExpandMoreIcon />}
+                    >
+                        <Box sx={{display: 'flex', minWidth: 0, width: '100%'}}>
+                            <Typography
+                                sx={{flexGrow: '1', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
+                            >
+                                {task.attributes.TaskDesignator || taskId}
+                            </Typography>
+                            {isTimeLogsToMerge && (
+                                <Tooltip
+                                    disableInteractive
+                                    title={mergeTimeLogs[taskId] ? 'Unmerge TimeLogs' : 'Merge TimeLogs'}
+                                >
+                                    <IconButton sx={{p: 0.25}} size="small" onClick={handleMergeClickCallbacks[taskId]}>
+                                        <MergeIcon
+                                            color={mergeTimeLogs[taskId] ? 'primary' : 'disabled'}
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                        </Box>
                     </AccordionSummary>
                     <AccordionDetails>
                         {isPartfieldWithGeom && (
@@ -67,14 +110,25 @@ export function ISOXMLFileStructure() {
                                 />
                             </Box>
                         )}
-                        {timeLogs.map(timeLog => {
+                        {!mergeTimeLogs[taskId] && timeLogs.map(timeLog => {
                             const timeLogId = timeLog.attributes.Filename
                             return (
                                 <Box sx={{pl: 2}} key={timeLogId}>
-                                    <TimeLogEntity timeLogId={timeLogId} />
+                                    <TimeLogEntity
+                                        timeLogId={timeLogId}
+                                        isMergedTimeLog={false}
+                                    />
                                 </Box>
                             )
                         })}
+                        {mergeTimeLogs[taskId] && (
+                            <Box sx={{pl: 2}} key={taskId}>
+                                <TimeLogEntity
+                                    timeLogId={taskId}
+                                    isMergedTimeLog={true}
+                                />
+                            </Box>
+                        )}
                     </AccordionDetails>
                 </Accordion>
             )

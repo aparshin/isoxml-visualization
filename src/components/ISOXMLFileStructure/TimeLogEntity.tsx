@@ -12,7 +12,7 @@ import Divider from "@mui/material/Divider";
 import { DataLogValueInfo } from "isoxml";
 
 import { TIMELOG_COLOR_SCALE } from "../../utils";
-import { getTimeLogInfo, getTimeLogValuesRange, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
+import { getMergedTimeLogInfo, getTaskTimeLogsValuesRange, getTimeLogInfo, getTimeLogValuesRange, parseAllTaskTimeLogs, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
 import {
     setExcludeOutliers,
     setFillMissingOutliers,
@@ -30,7 +30,8 @@ import { EntityTitle } from "./EntityTitle";
 import { ValueDataPalette } from "./ValueDataPalette";
 
 interface TimeLogEntityProps {
-    timeLogId: string
+    timeLogId: string // it's taskId for merged TimeLogs
+    isMergedTimeLog: boolean
 }
 
 const renderMenuItem = (valueInfo: DataLogValueInfo) => (
@@ -73,7 +74,7 @@ const TimeLogCheckbox = ({label, checked, onChange}: {
     />
 )
 
-export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
+export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
     const isVisible = useSelector((state: RootState) => timeLogVisibilitySelector(state, timeLogId))
@@ -82,19 +83,23 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
     const selectedValueKey = useSelector((state: RootState) => timeLogSelectedValueSelector(state, timeLogId))
 
     const onVisibilityClick = useCallback(() => {
-        parseTimeLog(timeLogId, fillMissingValues)
+        isMergedTimeLog
+            ? parseAllTaskTimeLogs(timeLogId, fillMissingValues)
+            : parseTimeLog(timeLogId, fillMissingValues)
         dispatch(setTimeLogVisibility({timeLogId, visible: !isVisible}))
-    }, [dispatch, timeLogId, isVisible, fillMissingValues])
+    }, [dispatch, timeLogId, isVisible, fillMissingValues, isMergedTimeLog])
 
     const onZoomToClick = useCallback(() => {
-        parseTimeLog(timeLogId, fillMissingValues)
-        const updatedTimeLogInfo = getTimeLogInfo(timeLogId)
+        isMergedTimeLog
+            ? parseAllTaskTimeLogs(timeLogId, fillMissingValues)
+            : parseTimeLog(timeLogId, fillMissingValues)
+        const updatedTimeLogInfo = isMergedTimeLog ? getMergedTimeLogInfo(timeLogId) : getTimeLogInfo(timeLogId)
         const bbox = updatedTimeLogInfo.bbox
         if (bbox.every(pos => isFinite(pos))) {
             dispatch(fitBounds([...updatedTimeLogInfo.bbox]))
         }
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
-    }, [dispatch, timeLogId, fillMissingValues])
+    }, [dispatch, timeLogId, fillMissingValues, isMergedTimeLog])
 
     const onValueChange = useCallback((event) => {
         dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
@@ -108,18 +113,30 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         dispatch(setFillMissingOutliers({timeLogId, fill: event.target.checked}))
     }, [dispatch, timeLogId])
 
+    const timeLogInfo = useMemo(
+        () => {
+            if (!isVisible) {
+                return
+            }
+
+            return isMergedTimeLog
+                ? getMergedTimeLogInfo(timeLogId)
+                : getTimeLogInfo(timeLogId)
+        },
+        [isVisible, timeLogId, isMergedTimeLog]
+    )
+
     const valuesInfo: DataLogValueInfo[] = useMemo(() => {
         if (!isVisible) {
             return []
         }
-        const timeLogInfo = getTimeLogInfo(timeLogId)
         return timeLogInfo.valuesInfo.filter(
-            valueInfo => 'minValue' in valueInfo
+            valueInfo => valueInfo.minValue !== undefined
         )
 
-    }, [timeLogId, isVisible])
+    }, [timeLogInfo, isVisible])
 
-    const parsingWarnings = getTimeLogInfo(timeLogId)?.parsingErrors || []
+    const parsingWarnings = timeLogInfo?.parsingErrors || []
 
     const standardValuesInfo = valuesInfo.filter(valueInfo => !valueInfo.isProprietary)
     const proprietaryValuesInfo = valuesInfo.filter(valueInfo => valueInfo.isProprietary)
@@ -131,7 +148,9 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         selectedValueInfo = valuesInfo.find(info => info.valueKey === selectedValueKey)
 
         if (selectedValueInfo) {
-            const {minValue, maxValue} = getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
+            const {minValue, maxValue} = isMergedTimeLog
+                ? getTaskTimeLogsValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
+                : getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
             min = minValue
             max = maxValue
         }
@@ -139,7 +158,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
 
     return (<>
         <EntityTitle
-            title={`TimeLog ${timeLogId}`}
+            title={isMergedTimeLog ? 'Merged TimeLog' : `TimeLog ${timeLogId}`}
             onVisibilityClick={onVisibilityClick}
             onZoomToClick={onZoomToClick}
             isVisible={isVisible}
@@ -149,6 +168,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
             <Box sx={{pb: 2}}>
                 <FormControl size='small' variant='standard' sx={{width: '100%'}}>
                     <Select
+                        MenuProps={{transitionDuration: 0}}
                         sx={{ width: '100%', fontSize: '0.9rem', fontStyle: 'italic' }}
                         value={selectedValueInfo.valueKey}
                         onChange={onValueChange}
@@ -186,7 +206,7 @@ export function TimeLogEntity({ timeLogId }: TimeLogEntityProps) {
         )}
         {isVisible && valuesInfo.length === 0 && (
             <Typography variant='body2' sx={{pb: 2, fontStyle: 'italic'}}>
-                No timelog records with valid positions
+                No TimeLog records with valid positions
             </Typography>
         )}
     </>)

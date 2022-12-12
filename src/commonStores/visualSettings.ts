@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 import { RootState } from '../store'
 
 import { startLoading } from './isoxmlFile'
-import { getTimeLogsCache } from './isoxmlFileInfo'
+import { getMergedTimeLogInfo, getTimeLogInfo, isMergedTimeLogId } from './isoxmlFileInfo'
 
 interface VisualSettingsState {
     gridsVisibility: Record<string, boolean>
@@ -11,13 +11,16 @@ interface VisualSettingsState {
     timeLogsSelectedValue: Record<string, string>
     excludeOutliers: Record<string, boolean>,
     fillMissingValues: Record<string, boolean>
+    mergeTimeLogs: Record<string, boolean>
 }
 
 const setDefaultTimeLogValue = (state: VisualSettingsState, id: string) => {
     if (!state.timeLogsSelectedValue[id] && state.timeLogsVisibility[id]) {
-        const timeLogCache = getTimeLogsCache()[id]
-        const variableValuesInfo = timeLogCache.valuesInfo.find(
-            valueInfo => 'minValue' in valueInfo
+        const timeLogInfo = isMergedTimeLogId(id)
+            ? getMergedTimeLogInfo(id)
+            : getTimeLogInfo(id)
+        const variableValuesInfo = timeLogInfo.valuesInfo.find(
+            valueInfo => valueInfo.minValue !== undefined
         )
         if (variableValuesInfo) {
             state.timeLogsSelectedValue[id] = variableValuesInfo.valueKey
@@ -31,7 +34,8 @@ const initialState: VisualSettingsState = {
     partfieldsVisibility: {},
     timeLogsSelectedValue: {},
     excludeOutliers: {},
-    fillMissingValues: {}
+    fillMissingValues: {},
+    mergeTimeLogs: {}
 }
 
 export const visualSettingsSlice = createSlice({
@@ -62,6 +66,10 @@ export const visualSettingsSlice = createSlice({
         setFillMissingOutliers: (state, action) => {
             const {timeLogId, fill} = action.payload
             state.fillMissingValues[timeLogId] = fill
+        },
+        toggleMergeTimeLogs: (state, action) => {
+            const {taskId} = action.payload
+            state.mergeTimeLogs[taskId] = !state.mergeTimeLogs[taskId]
         }
     },
     extraReducers: builder => {
@@ -76,7 +84,8 @@ export const {
     setPartfieldVisibility,
     setTimeLogValue,
     setExcludeOutliers,
-    setFillMissingOutliers
+    setFillMissingOutliers,
+    toggleMergeTimeLogs
 } = visualSettingsSlice.actions
 
 // selectors
@@ -103,5 +112,7 @@ export const timeLogExcludeOutliersSelector =
 export const timeLogsFillMissingValuesSelector = (state: RootState) => state.visualSettings.fillMissingValues
 export const timeLogFillMissingValuesSelector =
     (state: RootState, timeLogId: string) => !!state.visualSettings.fillMissingValues[timeLogId]
+
+export const mergeTimeLogsSelector = (state: RootState) => state.visualSettings.mergeTimeLogs
 
 export default visualSettingsSlice.reducer
