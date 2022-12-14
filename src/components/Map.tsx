@@ -6,6 +6,7 @@ import DeckGL from '@deck.gl/react'
 import {GeoJsonLayer } from '@deck.gl/layers'
 import { ExtendedGrid, Task } from 'isoxml'
 import {
+    allExcludedMergedTimeLogsSelector,
     gridsVisibilitySelector,
     mergeTimeLogsSelector,
     partfieldsVisibilitySelector,
@@ -17,19 +18,17 @@ import {
 import { isoxmlFileGridsInfoSelector } from '../commonStores/isoxmlFile'
 import ISOXMLGridLayer from '../mapLayers/GridLayer'
 import { fitBoundsSelector } from '../commonStores/map'
-import { formatValue, getGridValue } from '../utils'
+import { formatValue, getGridValue, isMergedTimeLogId } from '../utils'
 import { OSMBasemap, OSMCopyright } from '../mapLayers/OSMBaseLayer'
 import {
     getISOXMLManager,
-    getMergedTimeLogGeoJSON,
-    getMergedTimeLogInfo,
     getPartfieldGeoJSON,
     getTaskIdByTimeLogFilename,
-    getTaskTimeLogsValuesRange,
+    getMergedTimeLogValuesRange,
     getTimeLogGeoJSON,
     getTimeLogInfo,
     getTimeLogValuesRange,
-    isMergedTimeLogId
+    getMergedTimeLogGeoJSONs,
 } from '../commonStores/isoxmlFileInfo'
 import TimeLogLayer from '../mapLayers/TimeLogLayer'
 import PartfieldLayer from '../mapLayers/PartfieldLayer'
@@ -63,6 +62,7 @@ export function Map() {
     const timeLogsSelectedValue = useSelector(timeLogsSelectedValueSelector)
     const timeLogsExcludeOutliers = useSelector(timeLogsExcludeOutliersSelector)
     const timeLogsFillMissingValues = useSelector(timeLogsFillMissingValuesSelector)
+    const excludedMergedTimeLogs = useSelector(allExcludedMergedTimeLogsSelector)
 
     const visiblePartfields = useSelector(partfieldsVisibilitySelector)
 
@@ -107,27 +107,43 @@ export function Map() {
             const excludeOutliers = timeLogsExcludeOutliers[timeLogId]
             const fillValues = timeLogsFillMissingValues[timeLogId]
             const isMerged = isMergedTimeLogId(timeLogId)
-            const geoJSON = isMerged
-                ? getMergedTimeLogGeoJSON(timeLogId, fillValues)
-                : getTimeLogGeoJSON(timeLogId, fillValues)
 
             const { minValue, maxValue } = isMerged
-                ? getTaskTimeLogsValuesRange(timeLogId, valueKey, excludeOutliers)
+                ? getMergedTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
                 : getTimeLogValuesRange(timeLogId, valueKey, excludeOutliers)
 
-            return [new TimeLogLayer(timeLogId, geoJSON, valueKey, minValue, maxValue)]
+            if (isMerged) {
+                const timeLogInfos = getMergedTimeLogGeoJSONs(
+                    timeLogId,
+                    fillValues,
+                    excludedMergedTimeLogs[timeLogId] ?? {}
+                )
+                return timeLogInfos.map(
+                    info => new TimeLogLayer(info.timeLogId, info.geoJSON, valueKey, minValue, maxValue)
+                )
+            } else {
+                const geoJSON = getTimeLogGeoJSON(timeLogId, fillValues)
+                return [new TimeLogLayer(timeLogId, geoJSON, valueKey, minValue, maxValue)]
+            }
         }),
-        [visibleTimeLogs, mergeTimeLogs, timeLogsSelectedValue, timeLogsExcludeOutliers, timeLogsFillMissingValues]
+        [
+            visibleTimeLogs,
+            mergeTimeLogs,
+            timeLogsSelectedValue,
+            timeLogsExcludeOutliers,
+            timeLogsFillMissingValues,
+            excludedMergedTimeLogs
+        ]
     )
     
     const viewStateRef = useRef(null)
 
-    const onViewStateChange = useCallback(e => {
+    const handleViewStateChange = useCallback(e => {
         viewStateRef.current = e.viewState 
         setTooltip(null)
     }, [])
 
-    const onMapClick = useCallback(pickInfo => {
+    const handleMapClick = useCallback(pickInfo => {
         if (!pickInfo.layer) {
             setTooltip(null)
             return
@@ -158,29 +174,26 @@ export function Map() {
             }
         } else if (pickInfo.layer instanceof GeoJsonLayer) {
             const timeLogId = pickInfo.layer.id
-            const valueKey = timeLogsSelectedValue[timeLogId]
+            const taskId = getTaskIdByTimeLogFilename(timeLogId)
+            const settingsLayerId = mergeTimeLogs[taskId] ? taskId : timeLogId
+            const valueKey = timeLogsSelectedValue[settingsLayerId]
             const value = pickInfo.object.properties[valueKey]
-            const timeLogInfo = isMergedTimeLogId(timeLogId)
-                ? getMergedTimeLogInfo(timeLogId).valuesInfo.find(info => info.valueKey === valueKey)
-                : getTimeLogInfo(timeLogId).valuesInfo.find(info => info.valueKey === valueKey)
+            const timeLogInfo = getTimeLogInfo(timeLogId).valuesInfo.find(info => info.valueKey === valueKey)
 
             const formattedValue = formatValue(value, timeLogInfo)
-            const tooltipValue = isMergedTimeLogId(timeLogId)
-                ? `${pickInfo.object.properties['originalTimeLogId']}: ${formattedValue}`
-                : formattedValue
 
             setTooltip({
                 x: pickInfo.x,
                 y: pickInfo.y,
-                value: tooltipValue,
+                value: `${timeLogId}: ${formattedValue}`,
                 layerType: 'timelog',
-                layerId: timeLogId,
+                layerId: settingsLayerId,
                 timeLogValueKey: valueKey
             })
         } else {
             setTooltip(null)
         }
-    }, [isoxmlManager, gridsInfo, timeLogsSelectedValue])
+    }, [isoxmlManager, gridsInfo, timeLogsSelectedValue, mergeTimeLogs])
 
     useEffect(() => {
         if (fitBounds) {
@@ -216,8 +229,8 @@ export function Map() {
             initialViewState={initialViewState}
             controller={true}
             layers={[OSMBasemap, ...gridLayers, ...partfieldLayers, ...timeLogLayers]}
-            onViewStateChange={onViewStateChange}
-            onClick={onMapClick}
+            onViewStateChange={handleViewStateChange}
+            onClick={handleMapClick}
         >
             <OSMCopyright />
             {isTooltipVisible && (<>

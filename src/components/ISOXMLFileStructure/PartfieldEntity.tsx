@@ -18,11 +18,11 @@ export function PartfieldEntity({partfield, partfieldId}: PartfieldEntityProps) 
 
     const isVisible = useSelector((state: RootState) => partfieldVisibilitySelector(state, partfieldId))
 
-    const onVisibilityClick = useCallback(() => {
+    const handleVisibilityClick = useCallback(() => {
         dispatch(setPartfieldVisibility({partfieldId, visible: !isVisible}))
     }, [dispatch, partfieldId, isVisible])
 
-    const onZoomToClick = useCallback(() => {
+    const handleZoomToClick = useCallback(() => {
         const partfieldGeoJSON = getPartfieldGeoJSON(partfieldId)
         dispatch(fitBounds(partfieldGeoJSON.bbox))
         dispatch(setPartfieldVisibility({partfieldId, visible: true}))
@@ -32,8 +32,8 @@ export function PartfieldEntity({partfield, partfieldId}: PartfieldEntityProps) 
         <EntityTitle
             title={`Field ${partfield.attributes.PartfieldDesignator || partfield}`}
             isVisible={isVisible}
-            onVisibilityClick={onVisibilityClick}
-            onZoomToClick={onZoomToClick}
+            onVisibilityClick={handleVisibilityClick}
+            onZoomToClick={handleZoomToClick}
         />
     )
 }

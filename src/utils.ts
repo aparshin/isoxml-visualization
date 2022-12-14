@@ -1,6 +1,6 @@
 import { ExtentsLeftBottomRightTop } from "@deck.gl/core/utils/positions";
 import chroma from "chroma-js";
-import { ExtendedGrid, ExtendedTreatmentZone, Grid, GridGridTypeEnum, ValueInformation } from "isoxml";
+import { ExtendedGrid, ExtendedTimeLog, ExtendedTreatmentZone, Grid, GridGridTypeEnum, Task, ValueInformation } from "isoxml";
 
 export function gridBounds(grid: Grid): ExtentsLeftBottomRightTop {
     const {
@@ -83,4 +83,13 @@ export function backgroundGradientFromPalette (scale: chroma.Scale) {
     return `${color.css()} ${idx / (len - 1) * 100}%`
   })
   return `linear-gradient(90deg,${stops.join(',')})`
+}
+
+export function isMergedTimeLogId(timeLogId: string) {
+    return timeLogId.startsWith('TSK')
+}
+
+export function getTimeLogsWithData(task: Task) {
+    return (task.attributes.TimeLog || [])
+        .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
 }

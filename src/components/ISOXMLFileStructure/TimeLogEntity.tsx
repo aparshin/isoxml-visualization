@@ -9,11 +9,21 @@ import FormControl from "@mui/material/FormControl";
 import ListSubheader from "@mui/material/ListSubheader";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
-import { DataLogValueInfo } from "isoxml";
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import { DataLogValueInfo, Task, TimeLog } from "isoxml";
 
-import { TIMELOG_COLOR_SCALE } from "../../utils";
-import { getMergedTimeLogInfo, getTaskTimeLogsValuesRange, getTimeLogInfo, getTimeLogValuesRange, parseAllTaskTimeLogs, parseTimeLog } from "../../commonStores/isoxmlFileInfo";
+import { getTimeLogsWithData, TIMELOG_COLOR_SCALE } from "../../utils";
 import {
+    getISOXMLManager,
+    getMergedTimeLogInfo,
+    getMergedTimeLogValuesRange,
+    getTimeLogInfo,
+    getTimeLogValuesRange,
+    parseAllTaskTimeLogs,
+    parseTimeLog
+} from "../../commonStores/isoxmlFileInfo";
+import {
+    excludedMergedTimeLogsSelector,
     setExcludeOutliers,
     setFillMissingOutliers,
     setTimeLogValue,
@@ -21,7 +31,8 @@ import {
     timeLogExcludeOutliersSelector,
     timeLogFillMissingValuesSelector,
     timeLogSelectedValueSelector,
-    timeLogVisibilitySelector
+    timeLogVisibilitySelector,
+    toggleExcludeMergedTimeLog
 } from "../../commonStores/visualSettings";
 import { fitBounds } from "../../commonStores/map";
 import { AppDispatch, RootState } from "../../store";
@@ -74,6 +85,33 @@ const TimeLogCheckbox = ({label, checked, onChange}: {
     />
 )
 
+const RealTimeLog = ({title, visible, disabled, timeLogId, onVisibilityClick}: {
+    title: string,
+    visible: boolean,
+    disabled: boolean,
+    timeLogId: string
+    onVisibilityClick: (timeLogId: string) => void
+}) => {
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                pointerEvents: disabled ? 'none' : 'initial',
+                cursor: disabled ? 'initial' : 'pointer',
+                opacity: disabled ? 0.5 : 1
+            }}
+            onClick={() => onVisibilityClick(timeLogId)}
+        >
+            <VisibilityIcon
+                sx={{width: '20px', height: '20px'}}
+                color={visible  && !disabled ? 'primary' : 'disabled'}
+            />
+            <Typography display="inline" sx={{flexGrow: 1, fontSize: '12px'}}>{title}</Typography>
+        </Box>
+    )
+}
+
 export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps) {
     const dispatch: AppDispatch = useDispatch()
 
@@ -81,15 +119,18 @@ export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps
     const excludeOutliers = useSelector((state: RootState) => timeLogExcludeOutliersSelector(state, timeLogId))
     const fillMissingValues = useSelector((state: RootState) => timeLogFillMissingValuesSelector(state, timeLogId))
     const selectedValueKey = useSelector((state: RootState) => timeLogSelectedValueSelector(state, timeLogId))
+    const excludedMergedTimeLogs = useSelector((state: RootState) =>
+        isMergedTimeLog ? excludedMergedTimeLogsSelector(state, timeLogId) : undefined
+    )
 
-    const onVisibilityClick = useCallback(() => {
+    const handleVisibilityClick = useCallback(() => {
         isMergedTimeLog
             ? parseAllTaskTimeLogs(timeLogId, fillMissingValues)
             : parseTimeLog(timeLogId, fillMissingValues)
         dispatch(setTimeLogVisibility({timeLogId, visible: !isVisible}))
     }, [dispatch, timeLogId, isVisible, fillMissingValues, isMergedTimeLog])
 
-    const onZoomToClick = useCallback(() => {
+    const handleZoomToClick = useCallback(() => {
         isMergedTimeLog
             ? parseAllTaskTimeLogs(timeLogId, fillMissingValues)
             : parseTimeLog(timeLogId, fillMissingValues)
@@ -101,16 +142,20 @@ export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps
         dispatch(setTimeLogVisibility({timeLogId, visible: true}))
     }, [dispatch, timeLogId, fillMissingValues, isMergedTimeLog])
 
-    const onValueChange = useCallback((event) => {
+    const handleValueChange = useCallback((event) => {
         dispatch(setTimeLogValue({timeLogId, valueKey: event.target.value}))
     }, [dispatch, timeLogId])
 
-    const onExcludeOutlier = useCallback(event => {
+    const handleExcludeOutlier = useCallback(event => {
         dispatch(setExcludeOutliers({timeLogId, exclude: event.target.checked}))
     }, [dispatch, timeLogId])
 
-    const onFillMissingValues = useCallback(event => {
+    const handleFillMissingValues = useCallback(event => {
         dispatch(setFillMissingOutliers({timeLogId, fill: event.target.checked}))
+    }, [dispatch, timeLogId])
+
+    const handleExcludeMergedTimeLog = useCallback(timeLogIdToExclude => {
+        dispatch(toggleExcludeMergedTimeLog({taskId: timeLogId, timeLogId: timeLogIdToExclude}))
     }, [dispatch, timeLogId])
 
     const timeLogInfo = useMemo(
@@ -141,26 +186,34 @@ export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps
     const standardValuesInfo = valuesInfo.filter(valueInfo => !valueInfo.isProprietary)
     const proprietaryValuesInfo = valuesInfo.filter(valueInfo => valueInfo.isProprietary)
 
-    let selectedValueInfo: DataLogValueInfo = null
-    let min: number
-    let max: number
-    if (isVisible && selectedValueKey) {
-        selectedValueInfo = valuesInfo.find(info => info.valueKey === selectedValueKey)
+    const {selectedValueInfo, min, max} = useMemo(() => {
+        if (!isVisible || !selectedValueKey) {
+            return {}
+        }
+        const selectedValueInfo = valuesInfo.find(info => info.valueKey === selectedValueKey)
 
         if (selectedValueInfo) {
             const {minValue, maxValue} = isMergedTimeLog
-                ? getTaskTimeLogsValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
+                ? getMergedTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
                 : getTimeLogValuesRange(timeLogId, selectedValueInfo.valueKey, excludeOutliers)
-            min = minValue
-            max = maxValue
+            return {selectedValueInfo, min: minValue, max: maxValue}
         }
+
+        return {}
+
+    }, [isVisible, selectedValueKey, valuesInfo, isMergedTimeLog, timeLogId, excludeOutliers])
+
+    let realTimeLogs: TimeLog[] = []
+    if (isMergedTimeLog) {
+        const task = getISOXMLManager().getEntityByXmlId<Task>(timeLogId)
+        realTimeLogs = getTimeLogsWithData(task)
     }
 
     return (<>
         <EntityTitle
             title={isMergedTimeLog ? 'Merged TimeLog' : `TimeLog ${timeLogId}`}
-            onVisibilityClick={onVisibilityClick}
-            onZoomToClick={onZoomToClick}
+            onVisibilityClick={handleVisibilityClick}
+            onZoomToClick={handleZoomToClick}
             isVisible={isVisible}
             warnings={parsingWarnings}
         />
@@ -171,7 +224,7 @@ export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps
                         MenuProps={{transitionDuration: 0}}
                         sx={{ width: '100%', fontSize: '0.9rem', fontStyle: 'italic' }}
                         value={selectedValueInfo.valueKey}
-                        onChange={onValueChange}
+                        onChange={handleValueChange}
                     >
                         {standardValuesInfo.map(renderMenuItem)}
                         {proprietaryValuesInfo.length > 0 && (
@@ -194,14 +247,36 @@ export function TimeLogEntity({ timeLogId, isMergedTimeLog }: TimeLogEntityProps
                 />
                 <TimeLogCheckbox
                     checked={excludeOutliers}
-                    onChange={onExcludeOutlier}
+                    onChange={handleExcludeOutlier}
                     label="Exclude outliers"
                 />
                 <TimeLogCheckbox
                     checked={fillMissingValues}
-                    onChange={onFillMissingValues}
+                    onChange={handleFillMissingValues}
                     label="Fill missing values"
                 />
+                {isMergedTimeLog && (
+                    <Box sx={{ml: 1, mt: 0.5}}>
+                        {realTimeLogs.map(timeLog => {
+                            const timeLogId = timeLog.attributes.Filename
+                            const timeLogInfo = getTimeLogInfo(timeLogId)
+                            const valueInfo = timeLogInfo.valuesInfo.find(
+                                info => info.valueKey === selectedValueInfo.valueKey
+                            )
+                            const disabled = valueInfo?.minValue === undefined
+                            return (
+                                <RealTimeLog
+                                    key={timeLogId}
+                                    timeLogId={timeLogId}
+                                    title={`TimeLog ${timeLogId}`}
+                                    visible={excludedMergedTimeLogs[timeLogId] !== true}
+                                    disabled={disabled}
+                                    onVisibilityClick={handleExcludeMergedTimeLog}
+                                />
+                            )
+                        })}
+                    </Box>
+                )}
             </Box>
         )}
         {isVisible && valuesInfo.length === 0 && (

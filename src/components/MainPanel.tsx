@@ -26,10 +26,14 @@ export function MainPanel() {
     const handleCloseWarnings = () => setOpenWarnings(false)
 
     const dispatch: AppDispatch = useDispatch()
-    const onDrop = useCallback(files => {
+    const handleDrop = useCallback(files => {
         dispatch(loadFile(files[0]))
     }, [dispatch])
-    const {getRootProps, getInputProps, isDragActive, open} = useDropzone({onDrop, noClick: true, noKeyboard: true})
+    const {getRootProps, getInputProps, isDragActive, open} = useDropzone({
+        onDrop: handleDrop,
+        noClick: true,
+        noKeyboard: true
+    })
     const fileState = useSelector(isoxmlFileStateSelector)
     const isoxmlWarnings = useSelector(isoxmlFileWarningsSelector)
     const isoxmlErrors = useSelector(isoxmlFileErrorsSelector)

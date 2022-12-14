@@ -9,13 +9,14 @@ import Tooltip from '@mui/material/Tooltip'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MergeIcon from '@mui/icons-material/Merge';
 import IconButton from '@mui/material/IconButton'
-import { ExtendedPartfield, ExtendedTimeLog } from 'isoxml'
+import { ExtendedPartfield } from 'isoxml'
 import { getISOXMLManager } from '../../commonStores/isoxmlFileInfo'
+import { mergeTimeLogsSelector, toggleMergeTimeLogs } from '../../commonStores/visualSettings'
+import { AppDispatch } from '../../store'
+import { getTimeLogsWithData } from '../../utils'
 import { GridEntity } from './GridEntity'
 import { TimeLogEntity } from './TimeLogEntity'
 import { PartfieldEntity } from './PartfieldEntity'
-import { mergeTimeLogsSelector, toggleMergeTimeLogs } from '../../commonStores/visualSettings'
-import { AppDispatch } from '../../store'
 
 export function ISOXMLFileStructure() {
 
@@ -49,8 +50,7 @@ export function ISOXMLFileStructure() {
             const partfield = task.attributes.PartfieldIdRef?.entity as ExtendedPartfield
             const isPartfieldWithGeom = partfield?.attributes.PolygonnonTreatmentZoneonly?.length > 0
 
-            const timeLogs = (task.attributes.TimeLog || [])
-                .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
+            const timeLogs = getTimeLogsWithData(task)
             const isTimeLogsToMerge = timeLogs.length > 1
 
             return (

@@ -1,8 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { RootState } from '../store'
 
+import { RootState } from '../store'
+import { isMergedTimeLogId } from '../utils'
+import { getMergedTimeLogInfo, getTimeLogInfo } from './isoxmlFileInfo'
 import { startLoading } from './isoxmlFile'
-import { getMergedTimeLogInfo, getTimeLogInfo, isMergedTimeLogId } from './isoxmlFileInfo'
 
 interface VisualSettingsState {
     gridsVisibility: Record<string, boolean>
@@ -12,6 +13,7 @@ interface VisualSettingsState {
     excludeOutliers: Record<string, boolean>,
     fillMissingValues: Record<string, boolean>
     mergeTimeLogs: Record<string, boolean>
+    excludeFromMergedTimeLogs: Record<string, Record<string, boolean>> // [taskId][timeLogId]
 }
 
 const setDefaultTimeLogValue = (state: VisualSettingsState, id: string) => {
@@ -35,7 +37,8 @@ const initialState: VisualSettingsState = {
     timeLogsSelectedValue: {},
     excludeOutliers: {},
     fillMissingValues: {},
-    mergeTimeLogs: {}
+    mergeTimeLogs: {},
+    excludeFromMergedTimeLogs: {}
 }
 
 export const visualSettingsSlice = createSlice({
@@ -70,6 +73,14 @@ export const visualSettingsSlice = createSlice({
         toggleMergeTimeLogs: (state, action) => {
             const {taskId} = action.payload
             state.mergeTimeLogs[taskId] = !state.mergeTimeLogs[taskId]
+        },
+        toggleExcludeMergedTimeLog: (state, action) => {
+            const {taskId, timeLogId} = action.payload
+            if (!state.excludeFromMergedTimeLogs[taskId]) {
+                state.excludeFromMergedTimeLogs[taskId] = {}
+            }
+
+            state.excludeFromMergedTimeLogs[taskId][timeLogId] = !state.excludeFromMergedTimeLogs[taskId][timeLogId]
         }
     },
     extraReducers: builder => {
@@ -85,7 +96,8 @@ export const {
     setTimeLogValue,
     setExcludeOutliers,
     setFillMissingOutliers,
-    toggleMergeTimeLogs
+    toggleMergeTimeLogs,
+    toggleExcludeMergedTimeLog
 } = visualSettingsSlice.actions
 
 // selectors
@@ -114,5 +126,9 @@ export const timeLogFillMissingValuesSelector =
     (state: RootState, timeLogId: string) => !!state.visualSettings.fillMissingValues[timeLogId]
 
 export const mergeTimeLogsSelector = (state: RootState) => state.visualSettings.mergeTimeLogs
+export const excludedMergedTimeLogsSelector =
+    (state: RootState, taskId: string) => state.visualSettings.excludeFromMergedTimeLogs[taskId] ?? {}
+export const allExcludedMergedTimeLogsSelector =
+    (state: RootState) => state.visualSettings.excludeFromMergedTimeLogs
 
 export default visualSettingsSlice.reducer

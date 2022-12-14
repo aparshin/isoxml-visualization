@@ -7,6 +7,7 @@ import {
     TimeLogInfo,
     TimeLogRecord
 } from "isoxml"
+import { getTimeLogsWithData } from "../utils"
 
 // The reason to keet it out of the store is to avoid non-serializable and too big data in the store
 // No parts of this app should modify data in this ISOXMLManager
@@ -23,10 +24,6 @@ interface ISOXMLManagerInfo {
 }
 
 let isoxmlManagerInfo: ISOXMLManagerInfo
-
-export function isMergedTimeLogId(timeLogId: string) {
-    return timeLogId.startsWith('TSK')
-}
 
 function findTimeLogById (timeLogId: string) {
     for (const task of (isoxmlManagerInfo.isoxmlManager.rootElement.attributes.Task || [])) {
@@ -65,11 +62,9 @@ export const parseAllTaskTimeLogs = (taskId: string, fillMissingValues: boolean)
         return
     }
 
-    ;(task.attributes.TimeLog || [])
-        .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
-        .forEach(timeLog => {
-            parseTimeLog(timeLog.attributes.Filename, fillMissingValues)
-        })
+    getTimeLogsWithData(task).forEach(timeLog => {
+        parseTimeLog(timeLog.attributes.Filename, fillMissingValues)
+    })
 }
 
 export const getTimeLogGeoJSON = (timeLogId: string, fillMissingValues: boolean) => {
@@ -106,28 +101,22 @@ export const getTimeLogGeoJSON = (timeLogId: string, fillMissingValues: boolean)
     return geoJSON
 }
 
-export const getMergedTimeLogGeoJSON = (taskId: string, fillMissingValues: boolean) => {
+export const getMergedTimeLogGeoJSONs = (
+    taskId: string,
+    fillMissingValues: boolean,
+    excludedTimeLogs: Record<string, boolean>
+) => {
     const task = isoxmlManagerInfo.isoxmlManager.getEntityByXmlId<Task>(taskId)
     if (!task) {
         return
     }
 
-    return {
-        type: 'FeatureCollection',
-        features: (task.attributes.TimeLog || [])
-            .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
-            .flatMap(timeLog => {
-                const timeLogId = timeLog.attributes.Filename
-                const geoJSON = getTimeLogGeoJSON(timeLogId, fillMissingValues)
-                return geoJSON.features.map(feature => ({
-                    ...feature,
-                    properties: {
-                        ...feature.properties,
-                        originalTimeLogId: timeLogId
-                    }
-                }))
-            })
-    }
+    return getTimeLogsWithData(task)
+        .filter(timeLog => !excludedTimeLogs[timeLog.attributes.Filename])
+        .map(timeLog => ({
+            timeLogId: timeLog.attributes.Filename,
+            geoJSON: getTimeLogGeoJSON(timeLog.attributes.Filename, fillMissingValues)
+        }))
 }
 
 export const getPartfieldGeoJSON = (partfieldId: string) => {
@@ -144,7 +133,6 @@ export const getPartfieldGeoJSON = (partfieldId: string) => {
 }
 
 export const getISOXMLManager = () => isoxmlManagerInfo?.isoxmlManager
-export const getTimeLogsCache = () => isoxmlManagerInfo?.timeLogsCache
 export const getTimeLogInfo = (timeLogId: string) => isoxmlManagerInfo?.timeLogsCache[timeLogId]
 
 const unionBbox = (
@@ -183,29 +171,27 @@ export const getMergedTimeLogInfo = (taskId: string): ExtendedTimeLogInfo => {
     const mergedValuesInfo: Record<string, DataLogValueInfo> = {}
     let parsingErrors: string[] = []
 
-    ;(task.attributes.TimeLog || [])
-        .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
-        .forEach(timeLog => {
-            const timeLogInfo = getTimeLogInfo(timeLog.attributes.Filename)
+    getTimeLogsWithData(task).forEach(timeLog => {
+        const timeLogInfo = getTimeLogInfo(timeLog.attributes.Filename)
 
-            if (!mergedBbox) {
-                mergedBbox = timeLogInfo.bbox
-            } else if (timeLogInfo.bbox) {
-                mergedBbox = unionBbox(mergedBbox, timeLogInfo.bbox)
-            }
+        if (!mergedBbox) {
+            mergedBbox = timeLogInfo.bbox
+        } else if (timeLogInfo.bbox) {
+            mergedBbox = unionBbox(mergedBbox, timeLogInfo.bbox)
+        }
 
-            timeLogInfo.valuesInfo.forEach(valueInfo => {
-                mergedValuesInfo[valueInfo.valueKey] = mergeValueInfo(
-                    mergedValuesInfo[valueInfo.valueKey],
-                    valueInfo
-                )
-            })
-
-            parsingErrors = [
-                ...parsingErrors,
-                ...(timeLogInfo.parsingErrors?.map(error => `${timeLog.attributes.Filename}: ${error}`) ?? [])
-            ]
+        timeLogInfo.valuesInfo.forEach(valueInfo => {
+            mergedValuesInfo[valueInfo.valueKey] = mergeValueInfo(
+                mergedValuesInfo[valueInfo.valueKey],
+                valueInfo
+            )
         })
+
+        parsingErrors = [
+            ...parsingErrors,
+            ...(timeLogInfo.parsingErrors?.map(error => `${timeLog.attributes.Filename}: ${error}`) ?? [])
+        ]
+    })
 
     return {
         bbox: mergedBbox,
@@ -243,25 +229,23 @@ export const getTimeLogValuesRange = (timeLogId: string, valueKey: string, exclu
     }
 }
 
-export const getTaskTimeLogsValuesRange = (taskId: string, valueKey: string, excludeOutliers: boolean) => {
+export const getMergedTimeLogValuesRange = (taskId: string, valueKey: string, excludeOutliers: boolean) => {
     const task = isoxmlManagerInfo.isoxmlManager.getEntityByXmlId<Task>(taskId)
     if (!task) {
         return
     }
 
-    return (task.attributes.TimeLog || [])
-        .filter((timeLog: ExtendedTimeLog) => timeLog.binaryData && timeLog.timeLogHeader)
-        .reduce((range, timeLog) => {
-            const timeLogRange = getTimeLogValuesRange(timeLog.attributes.Filename, valueKey, excludeOutliers)
-            return {
-                minValue: range?.minValue !== undefined && timeLogRange?.minValue !== undefined
-                    ? Math.min(range?.minValue, timeLogRange?.minValue)
-                    : range?.minValue ?? timeLogRange?.minValue,
-                maxValue: range?.maxValue !== undefined && timeLogRange?.maxValue !== undefined
-                    ? Math.max(range?.maxValue, timeLogRange?.maxValue)
-                    : range?.maxValue ?? timeLogRange?.maxValue
-            }
-        }, undefined as {minValue: number, maxValue: number})
+    return getTimeLogsWithData(task).reduce((range, timeLog) => {
+        const timeLogRange = getTimeLogValuesRange(timeLog.attributes.Filename, valueKey, excludeOutliers)
+        return {
+            minValue: range?.minValue !== undefined && timeLogRange?.minValue !== undefined
+                ? Math.min(range?.minValue, timeLogRange?.minValue)
+                : range?.minValue ?? timeLogRange?.minValue,
+            maxValue: range?.maxValue !== undefined && timeLogRange?.maxValue !== undefined
+                ? Math.max(range?.maxValue, timeLogRange?.maxValue)
+                : range?.maxValue ?? timeLogRange?.maxValue
+        }
+    }, undefined as {minValue: number, maxValue: number})
 }
 
 export function getTaskIdByTimeLogFilename (timeLogFilename: string) {

@@ -24,11 +24,11 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
     const isVisible = useSelector((state: RootState) => gridVisibilitySelector(state, gridId))
     const gridInfo = useSelector((state: RootState) => isoxmlFileGridInfoSelector(state, gridId))
 
-    const onVisibilityClick = useCallback(() => {
+    const handleVisibilityClick = useCallback(() => {
         dispatch(setGridVisibility({gridId, visible: !isVisible}))
     }, [dispatch, gridId, isVisible])
 
-    const onZoomToClick = useCallback(() => {
+    const handleZoomToClick = useCallback(() => {
         dispatch(fitBounds(gridBounds(grid)))
         dispatch(setGridVisibility({gridId, visible: true}))
     }, [dispatch, grid, gridId])
@@ -37,8 +37,8 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
     return (<>
         <EntityTitle
             title={`Grid ${grid.attributes.GridMaximumColumn}x${grid.attributes.GridMaximumRow}`}
-            onVisibilityClick={onVisibilityClick}
-            onZoomToClick={onZoomToClick}
+            onVisibilityClick={handleVisibilityClick}
+            onZoomToClick={handleZoomToClick}
             isVisible={isVisible}
         />
         {isVisible && (
