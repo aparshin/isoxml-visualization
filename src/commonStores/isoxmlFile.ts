@@ -45,8 +45,8 @@ export const isoxmlFileSlice = createSlice({
             state.warnings = isoxmlManager.getWarnings()
             ;(isoxmlManager.rootElement.attributes.Task || []).forEach(task => {
                 const grid = task.attributes.Grid?.[0] as ExtendedGrid
-                const taskXmlId = isoxmlManager.getReferenceByEntity(task).xmlId
-                if (grid) {
+                if (grid && grid.binaryData) {
+                    const taskXmlId = isoxmlManager.getReferenceByEntity(task).xmlId
                     const gridValuesDescription = (task as ExtendedTask).getGridValuesDescription()
                     const gridRange = calculateGridValuesRange(grid, task.attributes.TreatmentZone || [])
                     state.gridsInfo[taskXmlId] = {

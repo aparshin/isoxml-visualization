@@ -9,7 +9,7 @@ import Tooltip from '@mui/material/Tooltip'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MergeIcon from '@mui/icons-material/Merge';
 import IconButton from '@mui/material/IconButton'
-import { ExtendedPartfield } from 'isoxml'
+import { ExtendedGrid, ExtendedPartfield } from 'isoxml'
 import { getISOXMLManager } from '../../commonStores/isoxmlFileInfo'
 import { mergeTimeLogsSelector, toggleMergeTimeLogs } from '../../commonStores/visualSettings'
 import { AppDispatch } from '../../store'
@@ -44,7 +44,7 @@ export function ISOXMLFileStructure() {
 
     return (<>
         {tasks.map(task => {
-            const grid = task.attributes.Grid?.[0]
+            const grid = task.attributes.Grid?.[0] as ExtendedGrid
             const taskId = isoxmlManager.getReferenceByEntity(task).xmlId
             const partfieldId = task.attributes.PartfieldIdRef?.xmlId
             const partfield = task.attributes.PartfieldIdRef?.entity as ExtendedPartfield
@@ -102,7 +102,7 @@ export function ISOXMLFileStructure() {
                                 />
                             </Box>
                         )}
-                        {grid && (
+                        {grid && grid.binaryData && (
                             <Box sx={{pl: 2}}>
                                 <GridEntity
                                     gridId={taskId}
