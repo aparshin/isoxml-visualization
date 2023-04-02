@@ -10,7 +10,7 @@ interface ValueDataPaletteProps {
     valueInfo: ValueInformation
     min: number
     max: number
-    palette: chroma.Scale<chroma.Color>
+    palette?: chroma.Scale<chroma.Color>
 }
 
 /** This component renders the palette as a bar and max/min labels under the palette.
@@ -18,6 +18,9 @@ interface ValueDataPaletteProps {
 */
 export function ValueDataPalette({valueInfo, min, max, palette}: ValueDataPaletteProps) {
     const paletteSx = useMemo(() => {
+        if (!palette) {
+            return {}
+        }
         const paletteColors = palette.colors(undefined)
         const actualPalette = min === max
             ? chroma.scale([paletteColors[paletteColors.length - 1]])

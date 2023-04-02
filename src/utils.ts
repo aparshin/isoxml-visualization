@@ -58,6 +58,11 @@ export function calculateGridValuesRange (
         }
     }
 
+    // if we don't update min value, then all the values in the grid were zeros
+    if (min === +Infinity) {
+        return {min: 0, max: 0}
+    }
+
     return {min, max}
 }
 

@@ -33,6 +33,7 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
         dispatch(setGridVisibility({gridId, visible: true}))
     }, [dispatch, grid, gridId])
 
+    const showPalette = gridInfo.min !== 0 || gridInfo.max !== 0
 
     return (<>
         <EntityTitle
@@ -48,7 +49,7 @@ export function GridEntity({grid, gridId}: GridEntityProps) {
                     valueInfo={gridInfo}
                     min={gridInfo.min}
                     max={gridInfo.max}
-                    palette={GRID_COLOR_SCALE}
+                    palette={showPalette ? GRID_COLOR_SCALE : undefined}
                 />
             </Box>
         )}
